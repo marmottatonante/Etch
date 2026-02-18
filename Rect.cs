@@ -23,6 +23,19 @@ public readonly record struct Rect(Int2 Position, Int2 Size)
         return min.X < max.X && min.Y < max.Y ? FromMinMax(min, max) : null;
     }
 
+    public Rect Deflate(int amount) =>
+        Deflate(amount, amount);
+
+    public Rect Deflate(int horizontal, int vertical) =>
+        new(Position + new Int2(horizontal, vertical), 
+            Size - new Int2(horizontal * 2, vertical * 2));
+
+    public Rect Center(Int2 size)
+    {
+        var offset = new Int2((Size.X - size.X) / 2, (Size.Y - size.Y) / 2);
+        return new Rect(Position + offset, size);
+    }
+
     public (Rect top, Rect bottom) SplitHorizontal(int y) => (
         FromMinMax(Position, new Int2(Right, Top + y)),
         FromMinMax(new Int2(Left, Top + y), Max)
