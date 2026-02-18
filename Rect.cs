@@ -10,6 +10,7 @@ public readonly record struct Rect(Int2 Position, Int2 Size)
     public Int2 Max => Position + Size;
     public static Rect FromMinMax(Int2 min, Int2 max) => new(min, max - min);
     public static Rect Empty => default;
+    public bool IsEmpty => Size.X == 0 && Size.Y == 0;
 
     public bool Contains(Int2 point) =>
         point.X >= Left && point.X < Right &&
