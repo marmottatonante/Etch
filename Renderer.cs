@@ -12,14 +12,14 @@ public sealed class Renderer : IDisposable
     public double FPS => 1.0 / DeltaTime;
 
     public IControl? Root { get; set; } = null;
-    private IControl Error { get; } = new Center(new Label("No Root control."));
+    public IControl Default { get; set; } = new Center(new Label("No Root control."));
 
     public Renderer() => Console.Write("\x1b[?25l\x1b[2J");
     public void Dispose() => Console.Write("\x1b[?25h\x1b[2J\x1b[H");
 
     public void RenderOnce()
     {
-        IControl target = Root ?? Error;
+        IControl target = Root ?? Default;
 
         _canvas.Clear();
         Int2 size = target.Measure((Console.WindowWidth, Console.WindowHeight));
