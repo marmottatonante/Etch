@@ -7,7 +7,7 @@ public sealed class Canvas
 {
     private readonly ArrayBufferWriter<byte> _buffer = new(8192);
 
-    public void Move(int x, int y) => _buffer.Write(ANSI.MoveTo[y][x]);
+    public void Move(Int2 position) => _buffer.Write(ANSI.MoveTo[position.Y][position.X]);
     public void Write(ReadOnlySpan<char> text) 
     {
         int max = Encoding.UTF8.GetMaxByteCount(text.Length);
