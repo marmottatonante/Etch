@@ -1,10 +1,13 @@
 namespace Etch;
 
 public record struct Context(Canvas Canvas, Rect Bounds);
-public sealed class Renderer
+public sealed class Renderer : IDisposable
 {
     private readonly Canvas _canvas = new();
     private readonly Stream _output = Console.OpenStandardOutput();
+
+    public Renderer() => Console.Write("\x1b[?25l\x1b[2J");
+    public void Dispose() => Console.Write("\x1b[?25h\x1b[H");
 
     public void Render(IControl root)
     {
