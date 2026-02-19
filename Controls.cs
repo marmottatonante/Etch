@@ -2,5 +2,6 @@ namespace Etch;
 
 public interface IControl
 {
-    void Render(Batch batch);
+    Int2 Measure(Int2 available);
+    void Render(Context context);
 }

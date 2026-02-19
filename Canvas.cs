@@ -3,7 +3,7 @@ using System.Text;
 
 namespace Etch;
 
-public sealed class Batch
+public sealed class Canvas
 {
     private readonly ArrayBufferWriter<byte> _buffer = new(8192);
 
