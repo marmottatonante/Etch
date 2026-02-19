@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Security.Cryptography;
 
 namespace Etch;
 
@@ -12,19 +11,19 @@ public sealed class Renderer : IDisposable
     public double DeltaTime { get; private set; } = 0;
     public double FPS => 1.0 / DeltaTime;
 
-    public IControl? Root { get; set; }
+    public IControl? Root { get; set; } = null;
+    private IControl Error { get; } = new Center(new Label("No Root control."));
 
     public Renderer() => Console.Write("\x1b[?25l\x1b[2J");
     public void Dispose() => Console.Write("\x1b[?25h\x1b[2J\x1b[H");
 
     public void RenderOnce()
     {
-        if (Root is null) return;
+        IControl target = Root ?? Error;
 
         _canvas.Clear();
-        Int2 size = Root.Measure((Console.WindowWidth, Console.WindowHeight));
-        Root.Render(new Context(_canvas, new(Int2.Zero, size)));
-        
+        Int2 size = target.Measure((Console.WindowWidth, Console.WindowHeight));
+        target.Render(new Context(_canvas, new(Int2.Zero, size)));
         _output.Write(_canvas.Span);
         _output.Flush();
     }
