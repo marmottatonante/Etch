@@ -17,4 +17,13 @@ public sealed class Canvas
 
     public ReadOnlySpan<byte> Span => _buffer.WrittenSpan;
     public void Clear() => _buffer.Clear();
+    public void Clear(Rect rect)
+    {
+        var empty = new string(' ', rect.Size.X);
+        for (int y = 0; y < rect.Size.Y; y++)
+        {
+            Move(rect.Position + new Int2(0, y));
+            Write(empty.AsSpan());
+        }
+    }
 }

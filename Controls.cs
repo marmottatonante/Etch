@@ -1,5 +1,3 @@
-using Microsoft.VisualBasic;
-
 namespace Etch;
 
 public interface IControl
@@ -8,27 +6,7 @@ public interface IControl
     void Render(Context context);
 }
 
-public sealed record class Label(string Text) : IControl
-{
-    public Int2 Measure(Int2 available) => (Text.Length, 1);
-    public void Render(Context context)
-    {
-        context.Canvas.Move(context.Bounds.Position);
-        context.Canvas.Write(Text.AsSpan());
-    }
-}
-
-public sealed record class Binder(Func<string> Source) : IControl
-{
-    public Int2 Measure(Int2 available) => (Source().Length, 1);
-    public void Render(Context context)
-    {
-        context.Canvas.Move(context.Bounds.Position);
-        context.Canvas.Write(Source().AsSpan());
-    }
-}
-
-public sealed class Panel : IControl
+public sealed record class Panel : IControl
 {
     private readonly List<(IControl, Int2)> _controls = [];
     public void Add(IControl control, Int2 at) => _controls.Add((control, at));
@@ -42,5 +20,16 @@ public sealed class Panel : IControl
             var bounds = new Rect(context.Bounds.Position + position, size);
             control.Render(new Context(context.Canvas, bounds));
         }
+    }
+}
+
+public sealed record class Center(IControl Child) : IControl
+{
+    public Int2 Measure(Int2 available) => available;
+    public void Render(Context context)
+    {
+        var size = Child.Measure(context.Bounds.Size);
+        var bounds = context.Bounds.Center(size);
+        Child.Render(new Context(context.Canvas, bounds));
     }
 }

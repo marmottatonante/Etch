@@ -7,7 +7,7 @@ public sealed class Renderer : IDisposable
     private readonly Stream _output = Console.OpenStandardOutput();
 
     public Renderer() => Console.Write("\x1b[?25l\x1b[2J");
-    public void Dispose() => Console.Write("\x1b[?25h\x1b[H");
+    public void Dispose() => Console.Write("\x1b[?25h\x1b[2J\x1b[H");
 
     public void Render(IControl root)
     {
