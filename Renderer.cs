@@ -7,6 +7,7 @@ public sealed class Renderer
 
     public void Render(IControl root)
     {
-        root.Render(new Context(_canvas, new()));
+        Int2 size = root.Measure((Console.WindowWidth, Console.WindowHeight));
+        root.Render(new Context(_canvas, new(Int2.Zero, size)));
     }
 }
