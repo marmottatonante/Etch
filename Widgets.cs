@@ -17,12 +17,12 @@ public abstract class Widget : IControl
 
 public sealed class Label(string text) : Widget
 {
-    public string Text { get; set; } = text;
-    public override Int2 Measure(Int2 available) => (Text.Length, 1);
+    private readonly string _text = text;
+    public override Int2 Measure(Int2 available) => (_text.Length, 1);
     protected override void Render(Context context)
     {
         context.Canvas.Move(context.Bounds.Position);
-        context.Canvas.Write(Text.AsSpan());
+        context.Canvas.Write(_text.AsSpan());
     }
 }
 
@@ -39,14 +39,14 @@ public sealed class Binder(Func<string> source) : Widget
 
 public sealed class Image(string[] lines) : Widget
 {
-    public string[] Lines { get; set; } = lines;
-    public override Int2 Measure(Int2 available) => new(Lines.Max(l => l.Length), Lines.Length);
+    private readonly string[] _lines = lines;
+    public override Int2 Measure(Int2 available) => new(_lines.Max(l => l.Length), _lines.Length);
     protected override void Render(Context context)
     {
-        for(int i = 0; i < Lines.Length; i++)
+        for(int i = 0; i < _lines.Length; i++)
         {
             context.Canvas.Move(context.Bounds.Position + (0, i));
-            context.Canvas.Write(Lines[i].AsSpan());
+            context.Canvas.Write(_lines[i].AsSpan());
         }
     }
 }
