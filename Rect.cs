@@ -17,7 +17,8 @@ public readonly record struct Rect(Int2 Position, Int2 Size)
         point.Y >= Top  && point.Y < Bottom;
     
     public bool Contains(Rect other) =>
-        Contains(other.Position) && Contains(other.Max);
+        other.Left >= Left && other.Right <= Right &&
+        other.Top >= Top && other.Bottom <= Bottom;
 
     public Rect? Intersect(Rect other)
     {

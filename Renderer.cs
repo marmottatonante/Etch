@@ -8,14 +8,15 @@ public sealed class Renderer : IDisposable
     private readonly ArrayBufferWriter<byte> _buffer = new();
     private readonly Stream _output = Console.OpenStandardOutput();
 
-    private readonly record struct Slot(IControl Control, Layout Layout, Rect Current, Rect Previous);
-    private readonly List<Slot> _controls = [];
+    private readonly List<(IControl Control, Layout Layout)> _controls = [];
     public void Add(IControl control, Layout layout) =>
-        _controls.Add(new(control, layout, Rect.Empty, Rect.Empty)); 
+        _controls.Add(new(control, layout)); 
 
     public double DeltaTime { get; private set; } = 0;
     public double FPS { get; private set; }
     private const double Smoothing = 0.9;
+
+    private static readonly Label Placeholder = new("!");
 
     public Renderer() => Console.Write("\x1b[?25l\x1b[2J");
     public void Dispose() => Console.Write("\x1b[?25h\x1b[2J\x1b[H");
@@ -23,20 +24,14 @@ public sealed class Renderer : IDisposable
     public void RenderOnce()
     {
         _buffer.Clear();
+        _buffer.Write("\x1b[2J"u8);
 
         Rect screenRect = new(Int2.Zero, (Console.WindowWidth, Console.WindowHeight));
-        for(int i = 0; i < _controls.Count; i++)
+        foreach(var (Control, Layout) in _controls)
         {
-            IControl control = _controls[i].Control;
-            Layout layout = _controls[i].Layout;
-            Rect newPrevious = _controls[i].Current;
-            Rect newCurrent = layout(screenRect, control.Size);
-
-            if(newPrevious != Rect.Empty) new Region(_buffer, newPrevious).Clear();
-
-            control.Render(new(_buffer, newCurrent));
-            File.AppendAllText("debug.log", $"{control.GetType().Name}: bounds={newCurrent}\n");
-            _controls[i] = new Slot(control, layout, newCurrent, newPrevious);
+            Rect rect = Layout(screenRect, Control.Size);
+            if(screenRect.Contains(rect)) Control.Render(new Region(_buffer, rect));
+            else Placeholder.Render(new Region(_buffer, Layout(screenRect, Placeholder.Size)));
         }
 
         _output.Write(_buffer.WrittenSpan);
