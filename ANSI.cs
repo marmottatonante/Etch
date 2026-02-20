@@ -4,18 +4,8 @@ namespace Etch;
 
 public static class ANSI
 {
-    public static readonly byte[][][] MoveTo = CacheMoveTo(120, 80);
-    private static byte[][][] CacheMoveTo(int width, int height)
-    {
-        var cache = new byte[height][][];
-        for (int y = 0; y < height; y++)
-        {
-            cache[y] = new byte[width][];
-            for (int x = 0; x < width; x++)
-            {
-                cache[y][x] = Encoding.UTF8.GetBytes($"\x1b[{y + 1};{x + 1}H");
-            }
-        }
-        return cache;
-    }
+    public static readonly byte[] Reset = "\x1b[0m"u8.ToArray();
+    public static readonly byte[] Bold = "\x1b[1m"u8.ToArray();
+    public static readonly byte[] Underline = "\x1b[4m"u8.ToArray();
+    public static byte[] MoveTo(int x, int y) => Encoding.UTF8.GetBytes($"\x1b[{y + 1};{x + 1}H");
 }

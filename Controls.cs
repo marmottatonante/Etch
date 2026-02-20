@@ -6,22 +6,21 @@ public interface IControl
     void Render(Context context);
 }
 
-public sealed class Center(IControl Child) : IControl
+public sealed class Center(IControl child) : IControl
 {
+    private readonly IControl _child = child;
     public Int2 Measure(Int2 available) => available;
     public void Render(Context context)
     {
-        var size = Child.Measure(context.Bounds.Size);
+        var size = _child.Measure(context.Bounds.Size);
         var bounds = context.Bounds.Center(size);
-        Child.Render(new Context(context.Canvas, bounds));
+        _child.Render(new Context(context.Canvas, bounds));
     }
 }
 
-public sealed class Panel : IControl
+public sealed class Panel(List<(IControl, Int2)> controls) : IControl
 {
-    private readonly List<(IControl, Int2)> _controls = [];
-    public void Add(IControl control, Int2 at) => _controls.Add((control, at));
-
+    private readonly List<(IControl, Int2)> _controls = controls;
     public Int2 Measure(Int2 available) => available;
     public void Render(Context context)
     {
@@ -35,12 +34,10 @@ public sealed class Panel : IControl
 }
 
 public enum Alignment { Start, Center, End }
-public sealed class VerticalStack : IControl
+public sealed class VerticalStack(List<(IControl, Alignment)> controls) : IControl
 {
+    private readonly List<(IControl Control, Alignment Alignment)> _controls = controls;
     private readonly List<Int2> _measuredSizes = [];
-    private readonly List<(IControl Control, Alignment Alignment)> _controls = [];
-    public void Add(IControl control, Alignment alignment = Alignment.Start) => _controls.Add((control, alignment));
-
     public Int2 Measure(Int2 available)
     {
         _measuredSizes.Clear();

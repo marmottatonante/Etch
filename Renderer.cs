@@ -11,19 +11,22 @@ public sealed class Renderer : IDisposable
     public double DeltaTime { get; private set; } = 0;
     public double FPS => 1.0 / DeltaTime;
 
-    public IControl? Root { get; set; } = null;
-    public IControl Default { get; set; } = new Center(new Label("No Root control."));
+    public IControl? Content { get; set; } = null;
+    public IControl? Overlay { get; set; } = null;
 
-    public Renderer() => Console.Write("\x1b[?25l\x1b[2J");
-    public void Dispose() => Console.Write("\x1b[?25h\x1b[2J\x1b[H");
+    public Renderer() => Console.Write("\x1b[?25l\x1b[2J\x1b[?7l");
+    public void Dispose() => Console.Write("\x1b[?25h\x1b[2J\x1b[H\x1b[?7h");
 
     public void RenderOnce()
     {
-        IControl target = Root ?? Default;
-
         _canvas.Clear();
-        Int2 size = target.Measure((Console.WindowWidth, Console.WindowHeight));
-        target.Render(new Context(_canvas, new(Int2.Zero, size)));
+
+        Int2? rootSize = Content?.Measure((Console.WindowWidth, Console.WindowHeight));
+        if (rootSize is not null) Content?.Render(new Context(_canvas, new(Int2.Zero, rootSize.Value)));
+
+        Int2? overlaySize = Overlay?.Measure((Console.WindowWidth, Console.WindowHeight));
+        if(overlaySize is not null) Overlay?.Render(new Context(_canvas, new(Int2.Zero, overlaySize.Value)));
+
         _output.Write(_canvas.Span);
         _output.Flush();
     }
