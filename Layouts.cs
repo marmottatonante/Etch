@@ -1,57 +1,48 @@
 namespace Etch;
 
-public interface ILayout
+public delegate Rect Layout(Rect available, Int2 size);
+public static class Layouts
 {
-    Rect Arrange(Rect available);
-}
+    public static Layout Absolute(Int2 position) =>
+        (available, size) => new Rect(position, size);
 
-/*
-public sealed class Center(IControl child) : ILayout
-{
-    private readonly IControl _child = child;
-}
+    public static Layout TopLeft =>
+        (available, size) => new Rect(available.Position, size);
 
-public enum Alignment { Start, Center, End }
-public sealed class VerticalStack(List<(IControl, Alignment)> controls) : ILayout
-{
-    private readonly List<(IControl Control, Alignment Alignment)> _controls = controls;
-    private readonly List<Int2> _measuredSizes = [];
-    public Int2 Arrange(Int2 available)
-    {
-        _measuredSizes.Clear();
+    public static Layout TopCenter =>
+        (available, size) => new Rect(new Int2(available.Position.X + (available.Size.X - size.X) / 2, available.Position.Y), size);
 
-        int width = 0;
-        int height = 0;
+    public static Layout TopRight =>
+        (available, size) => new Rect(new Int2(available.Right - size.X, available.Top), size);
 
-        foreach(var (control, alignment) in _controls)
+    public static Layout MiddleLeft =>
+        (available, size) => new Rect(new Int2(available.Left, available.Position.Y + (available.Size.Y - size.Y) / 2), size);
+
+    public static Layout Center =>
+        (available, size) => available.Center(size);
+
+    public static Layout MiddleRight =>
+        (available, size) => new Rect(new Int2(available.Right - size.X, available.Position.Y + (available.Size.Y - size.Y) / 2), size);
+
+    public static Layout BottomLeft =>
+        (available, size) => new Rect(new Int2(available.Left, available.Bottom - size.Y), size);
+
+    public static Layout BottomCenter =>
+        (available, size) => new Rect(new Int2(available.Position.X + (available.Size.X - size.X) / 2, available.Bottom - size.Y), size);
+
+    public static Layout BottomRight =>
+        (available, size) => new Rect(new Int2(available.Right - size.X, available.Bottom - size.Y), size);
+
+    public static Layout Inset(int amount) =>
+        Inset(amount, amount);
+
+    public static Layout Inset(int horizontal, int vertical) =>
+        (available, size) => new Rect(available.Position + new Int2(horizontal, vertical), size);
+
+    public static Layout Offset(Int2 offset, Layout inner) =>
+        (available, size) =>
         {
-            int remainingHeight = available.Y - height;
-            Int2  size = control.Arrange(new(available.X, remainingHeight));
-            _measuredSizes.Add(size);
-
-            if (size.X > width) width = size.X;
-            height += size.Y;
-        }
-
-        return new(width, height);
-    }
-
-    public void Render(Context context)
-    {
-        int y = 0;
-        for (int i = 0; i < _controls.Count; i++)
-        {
-            int x = _controls[i].Alignment switch
-            {
-                Alignment.Start => context.Bounds.Position.X,
-                Alignment.Center => context.Bounds.Position.X + (context.Bounds.Size.X - _measuredSizes[i].X) / 2,
-                Alignment.End => context.Bounds.Position.X + context.Bounds.Size.X - _measuredSizes[i].X,
-                _ => throw new ArgumentOutOfRangeException()
-            };
-
-            var bounds = new Rect(new Int2(x, context.Bounds.Position.Y + y), _measuredSizes[i]);
-            _controls[i].Control.Render(new Context(context.Canvas, bounds));
-            y += _measuredSizes[i].Y;
-        }
-    }
-}*/
+            var rect = inner(available, size);
+            return new Rect(rect.Position + offset, rect.Size);
+        };
+}

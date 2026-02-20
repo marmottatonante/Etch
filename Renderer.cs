@@ -8,12 +8,14 @@ public sealed class Renderer : IDisposable
     private readonly ArrayBufferWriter<byte> _buffer = new();
     private readonly Stream _output = Console.OpenStandardOutput();
 
-    public readonly record struct Renderable(IControl Control, Rect Current, Rect Previous);
-    private readonly List<Renderable> _renderables = [];
-    public void Add(Renderable renderable) => _renderables.Add(renderable);
+    private readonly record struct Slot(IControl Control, Layout Layout, Rect Current, Rect Previous);
+    private readonly List<Slot> _controls = [];
+    public void Add(IControl control, Layout layout) =>
+        _controls.Add(new(control, layout, Rect.Empty, Rect.Empty)); 
 
     public double DeltaTime { get; private set; } = 0;
-    public double FPS => 1.0 / DeltaTime;
+    public double FPS { get; private set; }
+    private const double Smoothing = 0.9;
 
     public Renderer() => Console.Write("\x1b[?25l\x1b[2J");
     public void Dispose() => Console.Write("\x1b[?25h\x1b[2J\x1b[H");
@@ -22,10 +24,19 @@ public sealed class Renderer : IDisposable
     {
         _buffer.Clear();
 
-        foreach(var renderable in _renderables)
+        Rect screenRect = new(Int2.Zero, (Console.WindowWidth, Console.WindowHeight));
+        for(int i = 0; i < _controls.Count; i++)
         {
-            Region region = new(_buffer, renderable.Current.Position);
-            renderable.Control.Render(region);
+            IControl control = _controls[i].Control;
+            Layout layout = _controls[i].Layout;
+            Rect newPrevious = _controls[i].Current;
+            Rect newCurrent = layout(screenRect, control.Size);
+
+            if(newPrevious != Rect.Empty) new Region(_buffer, newPrevious).Clear();
+
+            control.Render(new(_buffer, newCurrent));
+            File.AppendAllText("debug.log", $"{control.GetType().Name}: bounds={newCurrent}\n");
+            _controls[i] = new Slot(control, layout, newCurrent, newPrevious);
         }
 
         _output.Write(_buffer.WrittenSpan);
@@ -50,6 +61,8 @@ public sealed class Renderer : IDisposable
             if(remaining > 0) Thread.Sleep(TimeSpan.FromSeconds(remaining));
 
             DeltaTime = stopwatch.Elapsed.TotalSeconds;
+            double currentFPS = 1.0 / DeltaTime;
+            FPS = FPS * Smoothing + currentFPS * (1.0 - Smoothing);
         }
     }
 
@@ -64,7 +77,10 @@ public sealed class Renderer : IDisposable
         {
             stopwatch.Restart();
             this.RenderOnce();
+
             DeltaTime = stopwatch.Elapsed.TotalSeconds;
+            double currentFPS = 1.0 / DeltaTime;
+            FPS = FPS * Smoothing + currentFPS * (1.0 - Smoothing);
         }
     }
 }
