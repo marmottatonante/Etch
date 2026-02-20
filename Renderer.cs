@@ -1,39 +1,34 @@
+using System.Buffers;
 using System.Diagnostics;
 
 namespace Etch;
 
-public record struct Context(Canvas Canvas, Rect Bounds);
 public sealed class Renderer : IDisposable
 {
-    private readonly Canvas _canvas = new();
+    private readonly ArrayBufferWriter<byte> _buffer = new();
     private readonly Stream _output = Console.OpenStandardOutput();
+
+    public readonly record struct Renderable(IControl Control, Rect Current, Rect Previous);
+    private readonly List<Renderable> _renderables = [];
+    public void Add(Renderable renderable) => _renderables.Add(renderable);
 
     public double DeltaTime { get; private set; } = 0;
     public double FPS => 1.0 / DeltaTime;
 
-    public static class Errors
-    {
-        public static readonly IControl NoContent = new Center(new Label("No Content has been defined."));
-        public static readonly IControl InsufficientSize = new Center(new Label("!"));
-    }
-    
-    public IControl? Content { get; set; } = null;
-    
-    public Renderer() => Console.Write("\x1b[?25l\x1b[2J\x1b[?7l");
-    public void Dispose() => Console.Write("\x1b[?25h\x1b[2J\x1b[H\x1b[?7h");
+    public Renderer() => Console.Write("\x1b[?25l\x1b[2J");
+    public void Dispose() => Console.Write("\x1b[?25h\x1b[2J\x1b[H");
 
     public void RenderOnce()
     {
-        _canvas.Clear();
+        _buffer.Clear();
 
-        Int2 windowSize = new(Console.WindowWidth, Console.WindowHeight);
-        IControl target = Content ?? Errors.NoContent;
+        foreach(var renderable in _renderables)
+        {
+            Region region = new(_buffer, renderable.Current.Position);
+            renderable.Control.Render(region);
+        }
 
-        Int2 targetSize = target.Measure(windowSize);
-        if(targetSize > windowSize) target = Errors.InsufficientSize;
-        target.Render(new(_canvas, new((0, 0), targetSize)));
-
-        _output.Write(_canvas.Span);
+        _output.Write(_buffer.WrittenSpan);
         _output.Flush();
     }
 

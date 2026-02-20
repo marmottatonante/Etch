@@ -2,78 +2,34 @@ namespace Etch;
 
 public interface IControl
 {
-    Int2 Measure(Int2 available);
-    void Render(Context context);
+    Int2 Size { get; }
+    void Render(Region region);
 }
 
-public sealed class Center(IControl child) : IControl
+public sealed class Label(string text) : IControl
 {
-    private readonly IControl _child = child;
-    public Int2 Measure(Int2 available) => available;
-    public void Render(Context context)
-    {
-        var size = _child.Measure(context.Bounds.Size);
-        var bounds = context.Bounds.Center(size);
-        _child.Render(new Context(context.Canvas, bounds));
-    }
+    private readonly string _text = text;
+    public Int2 Size => new(_text.Length, 1);
+    public void Render(Region region) => region.Move((0, 0)).Write(_text.AsSpan());
 }
 
-public sealed class Panel(List<(IControl, Int2)> controls) : IControl
+public sealed class Binder(Func<string> source) : IControl
 {
-    private readonly List<(IControl, Int2)> _controls = controls;
-    public Int2 Measure(Int2 available) => available;
-    public void Render(Context context)
-    {
-        foreach (var (control, position) in _controls)
-        {
-            var size = control.Measure(context.Bounds.Size);
-            var bounds = new Rect(context.Bounds.Position + position, size);
-            control.Render(new Context(context.Canvas, bounds));
-        }
-    }
+    private readonly Func<string> _source = source;
+    public Int2 Size => new(_source().Length, 1);
+    public void Render(Region region) => region.Move((0, 0)).Write(_source().AsSpan());
 }
 
-public enum Alignment { Start, Center, End }
-public sealed class VerticalStack(List<(IControl, Alignment)> controls) : IControl
+public sealed class Image(string[] lines) : IControl
 {
-    private readonly List<(IControl Control, Alignment Alignment)> _controls = controls;
-    private readonly List<Int2> _measuredSizes = [];
-    public Int2 Measure(Int2 available)
+    private readonly string[] _lines = lines;
+    public Int2 Size => new(_lines.Max(l => l.Length), _lines.Length);
+    public void Render(Region region)
     {
-        _measuredSizes.Clear();
-
-        int width = 0;
-        int height = 0;
-
-        foreach(var (control, alignment) in _controls)
+        for(int i = 0; i < _lines.Length; i++)
         {
-            int remainingHeight = available.Y - height;
-            Int2 size = control.Measure(new(available.X, remainingHeight));
-            _measuredSizes.Add(size);
-
-            if(size.X > width) width = size.X;
-            height += size.Y;
-        }
-
-        return new(width, height);
-    }
-
-    public void Render(Context context)
-    {
-        int y = 0;
-        for (int i = 0; i < _controls.Count; i++)
-        {
-            int x = _controls[i].Alignment switch
-            {
-                Alignment.Start => context.Bounds.Position.X,
-                Alignment.Center => context.Bounds.Position.X + (context.Bounds.Size.X - _measuredSizes[i].X) / 2,
-                Alignment.End => context.Bounds.Position.X + context.Bounds.Size.X - _measuredSizes[i].X,
-                _ => throw new ArgumentOutOfRangeException()
-            };
-
-            var bounds = new Rect(new Int2(x, context.Bounds.Position.Y + y), _measuredSizes[i]);
-            _controls[i].Control.Render(new Context(context.Canvas, bounds));
-            y += _measuredSizes[i].Y;
+            region.Move((0, i));
+            region.Write(_lines[i].AsSpan());
         }
     }
 }
