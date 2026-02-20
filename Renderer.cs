@@ -11,9 +11,14 @@ public sealed class Renderer : IDisposable
     public double DeltaTime { get; private set; } = 0;
     public double FPS => 1.0 / DeltaTime;
 
+    public static class Errors
+    {
+        public static readonly IControl NoContent = new Center(new Label("No Content has been defined."));
+        public static readonly IControl InsufficientSize = new Center(new Label("!"));
+    }
+    
     public IControl? Content { get; set; } = null;
-    public IControl? Overlay { get; set; } = null;
-
+    
     public Renderer() => Console.Write("\x1b[?25l\x1b[2J\x1b[?7l");
     public void Dispose() => Console.Write("\x1b[?25h\x1b[2J\x1b[H\x1b[?7h");
 
@@ -21,11 +26,12 @@ public sealed class Renderer : IDisposable
     {
         _canvas.Clear();
 
-        Int2? rootSize = Content?.Measure((Console.WindowWidth, Console.WindowHeight));
-        if (rootSize is not null) Content?.Render(new Context(_canvas, new(Int2.Zero, rootSize.Value)));
+        Int2 windowSize = new(Console.WindowWidth, Console.WindowHeight);
+        IControl target = Content ?? Errors.NoContent;
 
-        Int2? overlaySize = Overlay?.Measure((Console.WindowWidth, Console.WindowHeight));
-        if(overlaySize is not null) Overlay?.Render(new Context(_canvas, new(Int2.Zero, overlaySize.Value)));
+        Int2 targetSize = target.Measure(windowSize);
+        if(targetSize > windowSize) target = Errors.InsufficientSize;
+        target.Render(new(_canvas, new((0, 0), targetSize)));
 
         _output.Write(_canvas.Span);
         _output.Flush();
