@@ -18,8 +18,8 @@ public sealed class Renderer : IDisposable
 
     private static readonly Label Placeholder = new("!");
 
-    public Renderer() => Console.Write("\x1b[?25l\x1b[2J");
-    public void Dispose() => Console.Write("\x1b[?25h\x1b[2J\x1b[H");
+    public Renderer() => Console.Write("\x1b[?25l\x1b[?1049h");
+    public void Dispose() => Console.Write("\x1b[?25l\x1b[?1049l");
 
     public void RenderOnce()
     {
