@@ -12,10 +12,9 @@ public sealed class Renderer : IDisposable
     public void Add(IControl control, Layout layout) =>
         _controls.Add(new(control, layout)); 
 
+    private readonly Stopwatch _stopwatch = new();
     public double DeltaTime { get; private set; } = 0;
-    public double FPS { get; private set; }
-    public double MaxFPS { get; private set; } = double.MinValue;
-    public double MinFPS { get; private set; } = double.MaxValue;
+    public double FrameTime { get; private set; } = 0;
 
     private static readonly Label Placeholder = new("!");
 
@@ -24,6 +23,9 @@ public sealed class Renderer : IDisposable
 
     public void RenderOnce()
     {
+        FrameTime = _stopwatch.Elapsed.TotalSeconds;
+        _stopwatch.Restart();
+
         _buffer.Clear();
         _buffer.Write("\x1b[2J"u8);
 
@@ -37,48 +39,29 @@ public sealed class Renderer : IDisposable
 
         _output.Write(_buffer.WrittenSpan);
         _output.Flush();
+
+        DeltaTime = _stopwatch.Elapsed.TotalSeconds;
     }
 
     public void RenderAt(int targetFPS)
     {
-        Stopwatch stopwatch = new();
         double targetSeconds = 1.0 / targetFPS;
-        
+
         bool isRunning = true;
         Console.CancelKeyPress += (_, e) => { e.Cancel = true; isRunning = false; };
 
         while (isRunning)
         {
-            stopwatch.Restart();
             this.RenderOnce();
-
-            double elapsed = stopwatch.Elapsed.TotalSeconds;
-            double remaining = targetSeconds - elapsed;
+            double remaining = targetSeconds - DeltaTime;
             if(remaining > 0) Thread.Sleep(TimeSpan.FromSeconds(remaining));
-
-            DeltaTime = stopwatch.Elapsed.TotalSeconds;
-            FPS = 1.0 / DeltaTime;
-            if(FPS > MaxFPS) MaxFPS = FPS;
-            if(FPS < MinFPS) MinFPS = FPS;
         }
     }
 
     public void RenderFree()
     {
-        Stopwatch stopwatch = new();
-        
         bool isRunning = true;
         Console.CancelKeyPress += (_, e) => { e.Cancel = true; isRunning = false; };
-
-        while (isRunning)
-        {
-            stopwatch.Restart();
-            this.RenderOnce();
-
-            DeltaTime = stopwatch.Elapsed.TotalSeconds;
-            FPS = 1.0 / DeltaTime;
-            if(FPS > MaxFPS) MaxFPS = FPS;
-            if(FPS < MinFPS) MinFPS = FPS;
-        }
+        while (isRunning) this.RenderOnce();
     }
 }
