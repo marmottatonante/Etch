@@ -8,15 +8,11 @@ public sealed class Renderer : IDisposable
     private readonly ArrayBufferWriter<byte> _buffer = new();
     private readonly Stream _output = Console.OpenStandardOutput();
 
-    private readonly List<(IControl Control, Layout Layout)> _controls = [];
-    public void Add(IControl control, Layout layout) =>
-        _controls.Add(new(control, layout)); 
+    public IControl Root = new Label("Welcome to Etch!");
 
     private readonly Stopwatch _stopwatch = new();
     public double DeltaTime { get; private set; } = 0;
     public double FrameTime { get; private set; } = 0;
-
-    private static readonly Label Placeholder = new("!");
 
     public Renderer() => Console.Write("\x1b[?25l\x1b[?1049h");
     public void Dispose() => Console.Write("\x1b[?25l\x1b[?1049l");
@@ -29,13 +25,8 @@ public sealed class Renderer : IDisposable
         _buffer.Clear();
         _buffer.Write("\x1b[2J"u8);
 
-        Rect screenRect = new(Int2.Zero, (Console.WindowWidth, Console.WindowHeight));
-        foreach(var (Control, Layout) in _controls)
-        {
-            Rect rect = Layout(screenRect, Control.Size);
-            if(screenRect.Contains(rect)) Control.Render(new Region(_buffer, rect));
-            else Placeholder.Render(new Region(_buffer, Layout(screenRect, Placeholder.Size)));
-        }
+        Rect screen = new(Int2.Zero, (Console.WindowWidth, Console.WindowHeight));
+        Root.Render(new Region(_buffer, screen));
 
         _output.Write(_buffer.WrittenSpan);
         _output.Flush();
