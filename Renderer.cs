@@ -14,7 +14,8 @@ public sealed class Renderer : IDisposable
 
     public double DeltaTime { get; private set; } = 0;
     public double FPS { get; private set; }
-    private const double Smoothing = 0.9;
+    public double MaxFPS { get; private set; } = double.MinValue;
+    public double MinFPS { get; private set; } = double.MaxValue;
 
     private static readonly Label Placeholder = new("!");
 
@@ -56,8 +57,9 @@ public sealed class Renderer : IDisposable
             if(remaining > 0) Thread.Sleep(TimeSpan.FromSeconds(remaining));
 
             DeltaTime = stopwatch.Elapsed.TotalSeconds;
-            double currentFPS = 1.0 / DeltaTime;
-            FPS = FPS * Smoothing + currentFPS * (1.0 - Smoothing);
+            FPS = 1.0 / DeltaTime;
+            if(FPS > MaxFPS) MaxFPS = FPS;
+            if(FPS < MinFPS) MinFPS = FPS;
         }
     }
 
@@ -74,8 +76,9 @@ public sealed class Renderer : IDisposable
             this.RenderOnce();
 
             DeltaTime = stopwatch.Elapsed.TotalSeconds;
-            double currentFPS = 1.0 / DeltaTime;
-            FPS = FPS * Smoothing + currentFPS * (1.0 - Smoothing);
+            FPS = 1.0 / DeltaTime;
+            if(FPS > MaxFPS) MaxFPS = FPS;
+            if(FPS < MinFPS) MinFPS = FPS;
         }
     }
 }
