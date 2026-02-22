@@ -5,6 +5,7 @@ namespace Etch;
 
 public readonly ref struct Region(ArrayBufferWriter<byte> buffer, Rect bounds)
 {
+    public const byte ClipIndicator = (byte)'>';
     private readonly ArrayBufferWriter<byte> _buffer = buffer;
     private readonly Rect _bounds = bounds;
 
@@ -26,12 +27,15 @@ public readonly ref struct Region(ArrayBufferWriter<byte> buffer, Rect bounds)
         if(position.Y >= _bounds.Size.Y || position.Y < 0) return this;
         int max = _bounds.Size.X - position.X;
         if(max <= 0) return this;
-        if(text.Length > max) text = text[..max];
+        bool clipped = text.Length > max;
+        if(clipped) text = text[..(max - 1)];
 
         _buffer.Write(ANSI.MoveTo(_bounds.Position + position));
         int bytes = Encoding.UTF8.GetMaxByteCount(text.Length);
         var span = _buffer.GetSpan(bytes);
         _buffer.Advance(Encoding.UTF8.GetBytes(text, span));
+        if(clipped) { _buffer.GetSpan(1)[0] = ClipIndicator; _buffer.Advance(1); }
+
         return this;
     }
     public Region Slice(Rect newRect)

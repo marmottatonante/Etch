@@ -8,7 +8,7 @@ public sealed class Renderer : IDisposable
     private readonly ArrayBufferWriter<byte> _buffer = new();
     private readonly Stream _output = Console.OpenStandardOutput();
 
-    public IControl Root = new Label("Welcome to Etch!");
+    public IControl Root = new Center(new Label("Welcome to Etch!"));
 
     private readonly Stopwatch _stopwatch = new();
     public double DeltaTime { get; private set; } = 0;
@@ -25,8 +25,8 @@ public sealed class Renderer : IDisposable
         _buffer.Clear();
         _buffer.Write("\x1b[2J"u8);
 
-        Rect screen = new(Int2.Zero, (Console.WindowWidth, Console.WindowHeight));
-        Root.Render(new Region(_buffer, screen));
+        Rect size = new(Int2.Zero, (Console.WindowWidth, Console.WindowHeight));
+        Root.Render(new Region(_buffer, size));
 
         _output.Write(_buffer.WrittenSpan);
         _output.Flush();
