@@ -60,20 +60,34 @@ public sealed class Center(IControl child) : IControl
     }
 }
 
-public sealed class VerticalStack(int spacing = 0, params IControl[] children) : IControl
+public sealed class Stack(Stack.Axis axis, Stack.Alignment alignment = Stack.Alignment.Start, int spacing = 0, params IControl[] children) : IControl
 {
+    public enum Axis { Horizontal, Vertical }
+    public enum Alignment { Start, Center, End }
+
     public Int2? Size
     {
         get
         {
-            int width = 0, height = 0;
+            int main = 0, cross = 0;
             foreach(var child in children)
             {
                 if(child.Size is not { } size) return null;
-                width = Math.Max(width, size.X);
-                height += size.Y;
+                if(axis == Axis.Vertical)
+                {
+                    main += size.Y;
+                    cross = Math.Max(cross, size.X);
+                }
+                else
+                {
+                    main += size.X;
+                    cross = Math.Max(cross, size.Y);
+                }
             }
-            return new(width, height + spacing * (children.Length - 1));
+            int totalSpacing = spacing * (children.Length - 1);
+            return axis == Axis.Vertical
+                ? new(cross, main + totalSpacing)
+                : new(main + totalSpacing, cross);
         }
     }
 
@@ -82,58 +96,39 @@ public sealed class VerticalStack(int spacing = 0, params IControl[] children) :
         int staticTotal = 0;
         int elasticCount = 0;
         foreach(var child in children)
-            if(child.Size is { } size) staticTotal += size.Y;
-            else elasticCount++;
+            if(child.Size is { } size)
+                staticTotal += axis == Axis.Vertical ? size.Y : size.X;
+            else
+                elasticCount++;
 
-        int elasticSpace = elasticCount > 0 
-            ? (region.Bounds.Size.Y - staticTotal - spacing * (children.Length - 1)) / elasticCount 
-            : 0;
+        int totalSpacing = spacing * (children.Length - 1);
+        int totalSpace = axis == Axis.Vertical ? region.Bounds.Size.Y : region.Bounds.Size.X;
+        int elasticSpace = elasticCount > 0 ? (totalSpace - staticTotal - totalSpacing) / elasticCount : 0;
 
         int offset = 0;
         foreach(var child in children)
         {
-            int childHeight = child.Size?.Y ?? elasticSpace;
-            child.Render(region.Slice(new Rect(new Int2(0, offset), new Int2(region.Bounds.Size.X, childHeight))));
-            offset += childHeight + spacing;
-        }
-    }
-}
+            Int2 childSize = child.Size ?? (
+                axis == Axis.Vertical
+                    ? new(region.Bounds.Size.X, elasticSpace)
+                    : new(elasticSpace, region.Bounds.Size.Y)
+            );
 
-public sealed class HorizontalStack(int spacing = 0, params IControl[] children) : IControl
-{
-    public Int2? Size
-    {
-        get
-        {
-            int width = 0, height = 0;
-            foreach(var child in children)
+            int crossSize = axis == Axis.Vertical ? childSize.X : childSize.Y;
+            int crossTotal = axis == Axis.Vertical ? region.Bounds.Size.X : region.Bounds.Size.Y;
+            int crossOffset = alignment switch
             {
-                if(child.Size is not { } size) return null;
-                height = Math.Max(height, size.Y);
-                width += size.X;
-            }
-            return new(width + spacing * (children.Length - 1), height);
-        }
-    }
+                Alignment.Center => (crossTotal - crossSize) / 2,
+                Alignment.End => crossTotal - crossSize,
+                _ => 0
+            };
 
-    public void Render(Region region)
-    {
-        int staticTotal = 0;
-        int elasticCount = 0;
-        foreach(var child in children)
-            if(child.Size is { } size) staticTotal += size.X;
-            else elasticCount++;
+            Int2 slicePosition = axis == Axis.Vertical
+                ? new(crossOffset, offset)
+                : new(offset, crossOffset);
 
-        int elasticSpace = elasticCount > 0 
-            ? (region.Bounds.Size.X - staticTotal - spacing * (children.Length - 1)) / elasticCount 
-            : 0;
-
-        int offset = 0;
-        foreach(var child in children)
-        {
-            int childWidth = child.Size?.X ?? elasticSpace;
-            child.Render(region.Slice(new Rect(new Int2(offset, 0), new Int2(childWidth, region.Bounds.Size.Y))));
-            offset += childWidth + spacing;
+            child.Render(region.Slice(new Rect(slicePosition, childSize)));
+            offset += (axis == Axis.Vertical ? childSize.Y : childSize.X) + spacing;
         }
     }
 }
