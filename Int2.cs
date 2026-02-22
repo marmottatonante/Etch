@@ -13,6 +13,6 @@ public readonly record struct Int2(int X, int Y)
     public static implicit operator Int2((int X, int Y) t) => new(t.X, t.Y);
     public static implicit operator (int, int)(Int2 int2) => new(int2.X, int2.Y);
 
-    public static bool operator >(Int2 a, Int2 b) => a.X > b.X || a.Y > b.Y;
-    public static bool operator <(Int2 a, Int2 b) => a.X < b.X || a.Y < b.Y;
+    public static bool operator >(Int2 a, Int2 b) => a.X > b.X && a.Y > b.Y;
+    public static bool operator <(Int2 a, Int2 b) => a.X < b.X && a.Y < b.Y;
 }
