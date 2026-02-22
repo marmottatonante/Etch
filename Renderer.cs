@@ -14,7 +14,7 @@ public sealed class Renderer : IDisposable
     public double DeltaTime { get; private set; } = 0;
     public double FrameTime { get; private set; } = 0;
 
-    public Renderer() => Console.Write("\x1b[?25l\x1b[?1049h");
+    public Renderer() { Platform.EnableAnsi(); Console.Write("\x1b[?25l\x1b[?1049h"); }
     public void Dispose() => Console.Write("\x1b[?25l\x1b[?1049l");
 
     public void RenderOnce()
