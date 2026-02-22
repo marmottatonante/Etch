@@ -27,10 +27,7 @@ public sealed class Image(string[] lines) : IControl
     public void Render(Region region)
     {
         for(int i = 0; i < _lines.Length; i++)
-        {
-            region.Move((0, i));
-            region.Write(_lines[i].AsSpan());
-        }
+            region.Write((0, i), _lines[i].AsSpan());
     }
 }
 
