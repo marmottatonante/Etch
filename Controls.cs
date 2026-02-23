@@ -9,21 +9,21 @@ public interface IControl
 public sealed class Label(string text) : IControl
 {
     private readonly string _text = text;
-    public Int2? Size => new(_text.Length, 1);
+    public Int2? Size { get; } = new(text.Length, 1);
     public void Render(Region region) => region.Write(_text.AsSpan());
 }
 
-public sealed class Binder(Func<string> source, int? length = null) : IControl
+public sealed class Binder(Func<string> source) : IControl
 {
     private readonly Func<string> _source = source;
-    public Int2? Size { get; } = length is not null ? (length.Value, 1) : null;
+    public Int2? Size => new(_source().Length, 1);
     public void Render(Region region) => region.Write(_source().AsSpan());
 }
 
 public sealed class Image(string[] lines) : IControl
 {
     private readonly string[] _lines = lines;
-    public Int2? Size => new(_lines.Max(l => l.Length), _lines.Length);
+    public Int2? Size { get; } = new(lines.Max(l => l.Length), lines.Length);
     public void Render(Region region)
     {
         for(int i = 0; i < _lines.Length; i++)
@@ -39,8 +39,11 @@ public sealed class Progress(Func<double> current, double maximum) : IControl
     public Int2? Size { get; } = new(4, 1);
     public void Render(Region region)
     {
-        double currentPercentage = _current() / _maximum * 100;
-        region.Write($"{(int)currentPercentage}%");
+        int percentage = (int)(_current() / _maximum * 100);
+        Span<char> buffer = stackalloc char[4];
+        percentage.TryFormat(buffer, out int written);
+        buffer[written++] = '%';
+        region.Write(buffer[..written]);
     }
 }
 
