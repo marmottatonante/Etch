@@ -5,7 +5,8 @@ namespace Etch;
 
 public sealed class Renderer : IDisposable
 {
-    private readonly ArrayBufferWriter<byte> _buffer = new();
+    private readonly ArrayBufferWriter<byte> _main = new();
+    private readonly ArrayBufferWriter<byte> _error = new();
     private readonly Stream _output = Console.OpenStandardOutput();
 
     public IControl Root = new Center(new Label("Welcome to Etch!"));
@@ -22,13 +23,14 @@ public sealed class Renderer : IDisposable
         FrameTime = _stopwatch.Elapsed.TotalSeconds;
         _stopwatch.Restart();
 
-        _buffer.Clear();
-        _buffer.Write("\x1b[2J"u8);
+        _main.Clear();
+        _main.Write("\x1b[2J"u8);
 
         Rect size = new(Int2.Zero, (Console.WindowWidth, Console.WindowHeight));
-        Root.Render(new Region(_buffer, size));
+        Root.Render(new Region(_main, _error, size));
 
-        _output.Write(_buffer.WrittenSpan);
+        _output.Write(_main.WrittenSpan);
+        _output.Write(_error.WrittenSpan);
         _output.Flush();
 
         DeltaTime = _stopwatch.Elapsed.TotalSeconds;
