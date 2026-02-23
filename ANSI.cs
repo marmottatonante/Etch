@@ -5,6 +5,7 @@ namespace Etch;
 
 public static class ANSI
 {
+    public static void Clear(ArrayBufferWriter<byte> buffer) => buffer.Write("\x1b[2J"u8);
     public static void Reset(ArrayBufferWriter<byte> buffer) => buffer.Write("\x1b[0m"u8);
     private static void Color(ArrayBufferWriter<byte> buffer, ReadOnlySpan<byte> prefix, Color color)
     {
