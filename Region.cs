@@ -3,45 +3,52 @@ using System.Text;
 
 namespace Etch;
 
-public readonly ref struct Region(ArrayBufferWriter<byte> buffer, Rect bounds)
+public readonly ref struct Region(ArrayBufferWriter<byte> main, ArrayBufferWriter<byte> error, Rect bounds)
 {
-    public const byte ClipIndicator = (byte)'>';
-    private readonly ArrayBufferWriter<byte> _buffer = buffer;
+    private readonly ArrayBufferWriter<byte> _main = main;
+    private readonly ArrayBufferWriter<byte> _error = error;
     private readonly Rect _bounds = bounds;
 
     public readonly Rect Bounds => _bounds;
 
-    public Region Reset()
-    {
-        _buffer.Write(ANSI.Reset);
-        return this;
-    }
-    public Region Color(byte foreground, byte background)
-    {
-        _buffer.Write(ANSI.Color(foreground, background));
-        return this;
-    }
+    public Region Reset() { ANSI.Reset(_main); return this; }
+    public Region Foreground(Color color) { ANSI.Foreground(_main, color); return this; }
+    public Region Background(Color color) { ANSI.Background(_main, color); return this; }
+
     public Region Write(ReadOnlySpan<char> text) => Write(Int2.Zero, text);
-    public Region Write(Int2 position, ReadOnlySpan<char> text) 
+    public Region Write(Int2 position, ReadOnlySpan<char> text)
     {
         if(position.Y >= _bounds.Size.Y || position.Y < 0) return this;
         int max = _bounds.Size.X - position.X;
         if(max <= 0) return this;
-        bool clipped = text.Length > max;
-        if(clipped) text = text[..(max - 1)];
+        if(text.Length > max) text = text[..max];
 
-        _buffer.Write(ANSI.MoveTo(_bounds.Position + position));
-        int bytes = Encoding.UTF8.GetMaxByteCount(text.Length);
-        var span = _buffer.GetSpan(bytes);
-        _buffer.Advance(Encoding.UTF8.GetBytes(text, span));
-        if(clipped) { _buffer.GetSpan(1)[0] = ClipIndicator; _buffer.Advance(1); }
+        ANSI.Move(_main, position);
+        ANSI.Write(_main, text);
 
         return this;
     }
+
+    private Region Write(Error error)
+    {
+        ANSI.Background(_error, Color.Red);
+        ANSI.Foreground(_error, Color.White);
+        ANSI.Move(_error, (0, 0));
+        ((byte)error).TryFormat(_error.GetSpan(3), out int written, default, null);
+        _error.Advance(written);
+        ANSI.Reset(_error);
+
+        return this;
+    }
+
     public Region Slice(Rect newRect)
     {
         var absolute = new Rect(_bounds.Position + newRect.Position, newRect.Size);
         var clipped = _bounds.Intersect(absolute) ?? Rect.Empty;
-        return new Region(_buffer, clipped);
+
+        if(clipped != absolute && !clipped.IsEmpty)
+            Write(Error.Clipping);
+
+        return new Region(_main, _error, clipped);
     }
 }
