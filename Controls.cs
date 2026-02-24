@@ -50,3 +50,68 @@ public sealed class Progress(Func<double> current, double maximum) : IControl
     }
     public void Update(Region region) => Draw(region);
 }
+
+public sealed class Table : IControl
+{
+    private readonly string[][] _rows;
+    private readonly int[] _widths;
+    private readonly int _totalWidth;
+
+    public Table(string[][] rows)
+    {
+        _rows = rows;
+        _widths = ComputeWidths(rows);
+        _totalWidth = _widths.Sum() + (_widths.Length - 1) * 3;
+    }
+
+    private static int[] ComputeWidths(string[][] rows)
+    {
+        int cols = rows.Max(r => r.Length);
+        var widths = new int[cols];
+        foreach (var row in rows)
+            for (int c = 0; c < row.Length; c++)
+                widths[c] = Math.Max(widths[c], row[c].Length);
+        return widths;
+    }
+
+    public Int2 Size => new(_totalWidth, _rows.Length);
+
+    private void RenderRow(Region region, int y, string[] cells)
+    {
+        Span<char> buffer = stackalloc char[_totalWidth];
+        buffer.Fill(' ');
+
+        int pos = 0;
+        for (int c = 0; c < _widths.Length; c++)
+        {
+            if (c > 0)
+            {
+                buffer[pos++] = ' ';
+                buffer[pos++] = '|';
+                buffer[pos++] = ' ';
+            }
+            string cell = c < cells.Length ? cells[c] : "";
+            if (c == 0)
+            {
+                cell.AsSpan().CopyTo(buffer[pos..]);
+                pos += _widths[c];
+            }
+            else
+            {
+                int padding = _widths[c] - cell.Length;
+                cell.AsSpan().CopyTo(buffer[(pos + padding)..]);
+                pos += _widths[c];
+            }
+        }
+
+        region.Write((0, y), buffer);
+    }
+
+    public void Draw(Region region)
+    {
+        for (int i = 0; i < _rows.Length; i++)
+            RenderRow(region, i, _rows[i]);
+    }
+
+    public void Update(Region region) { }
+}
