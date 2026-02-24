@@ -25,7 +25,7 @@ public sealed class Image(string[] content) : IControl
     }
 }
 
-public sealed class Binder(Func<string> source, int maxLength)
+public sealed class Binder(Func<string> source, int maxLength) : IControl
 {
     public readonly Func<string> Source = source;
     public Int2 Size { get; } = new(maxLength, 1);
@@ -42,9 +42,9 @@ public sealed class Progress(Func<double> current, double maximum) : IControl
     {
         int percentage = (int)(Current() / Maximum * 100);
         Span<char> buffer = stackalloc char[4];
-        percentage.TryFormat(buffer, out int written);
-        buffer[written++] = '%';
-        region.Write(buffer[..written]);
+        percentage.TryFormat(buffer, out _, "D3");
+        buffer[3] = '%';
+        region.Write(buffer);
     }
     public void Update(Region region) => Draw(region);
 }

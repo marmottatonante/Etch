@@ -16,19 +16,15 @@ public static class Shell
     public static Rect Screen => new(Int2.Zero, (Console.WindowWidth, Console.WindowHeight));
     private static Rect _lastScreen = Rect.Empty;
 
-    public static class Settings
-    {
-        public static bool AlternateBuffer { set => Console.Write(value ? "\x1b[?1049h" : "\x1b[?1049l"); }
-        public static bool ArrangeOnResize { get; set; }
-        public static bool ForceDraw { get; set; }
-    }
-
     private static readonly Stopwatch _stopwatch = new();
 
     public static int Frame { get; private set; } = 0;
     public static double DrawTime { get; private set; } = 0;
     public static double FlushTime { get; private set; } = 0;
-    public static double RenderTime => DrawTime + FlushTime;
+    public static double DeltaTime => DrawTime + FlushTime;
+
+    public static bool AlternateBuffer { set => Console.Write(value ? "\x1b[?1049h" : "\x1b[?1049l"); }
+    public static bool Cursor { set => Console.Write(value ? "\x1b[?25h" : "\x1b[?25l"); }
 
     static Shell() => Platform.EnableAnsi();
 
@@ -65,11 +61,7 @@ public static class Shell
 
         bool firstFrame = Frame == 1;
         bool hasResized = !firstFrame && _lastScreen != Screen;
-        bool requiresArrange = firstFrame || (hasResized && Settings.ArrangeOnResize);
-
-        if(requiresArrange) Arrange();
-        if(requiresArrange || Settings.ForceDraw) Draw(); else Update();
-        if(Settings.ForceDraw) Settings.ForceDraw = false;
+        if(firstFrame || hasResized) { Arrange(); Draw(); } else Update();
 
         DrawTime = _stopwatch.Elapsed.TotalSeconds;
         _stopwatch.Restart();
@@ -79,5 +71,18 @@ public static class Shell
 
         FlushTime = _stopwatch.Elapsed.TotalSeconds;
         _stopwatch.Stop();
+    }
+
+    public static void Run(int framerate = 0)
+    {
+        double target = framerate > 0 ? 1.0 / framerate : 0;
+        bool running = true;
+        Console.CancelKeyPress += (_, e) => { e.Cancel = true; running = false; };
+        while(running)
+        {
+            Render();
+            double remaining = target - DeltaTime;
+            if(remaining > 0) Thread.Sleep(TimeSpan.FromSeconds(remaining));
+        }
     }
 }
