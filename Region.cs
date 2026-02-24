@@ -21,9 +21,18 @@ public readonly ref struct Region(ArrayBufferWriter<byte> buffer, Rect bounds)
         if(max <= 0) return this;
         if(text.Length > max) text = text[..max];
 
-        ANSI.Move(_buffer, position);
+        ANSI.Move(_buffer, _bounds.Position + position);
         ANSI.Write(_buffer, text);
 
+        return this;
+    }
+
+    public Region Clear()
+    {
+        Span<char> spaces = stackalloc char[_bounds.Size.X];
+        spaces.Fill(' ');
+        for(int y = 0; y < _bounds.Size.Y; y++)
+            Write((0, y), spaces);
         return this;
     }
 
@@ -31,9 +40,6 @@ public readonly ref struct Region(ArrayBufferWriter<byte> buffer, Rect bounds)
     {
         var absolute = new Rect(_bounds.Position + newRect.Position, newRect.Size);
         var clipped = _bounds.Intersect(absolute) ?? Rect.Empty;
-
-        if(clipped != absolute && !clipped.IsEmpty) Errors.Clipping();
-
         return new Region(_buffer, clipped);
     }
 }
