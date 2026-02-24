@@ -7,7 +7,6 @@ public static class Shell
 {
     private static readonly ArrayBufferWriter<byte> _buffer = new();
     private static readonly Stream _output = Console.OpenStandardOutput();
-    private static bool _needsDraw = true;
 
     public record struct Entry(IControl Control, Func<Rect, Rect> Layout, Rect Cache)
     {
@@ -21,13 +20,15 @@ public static class Shell
     {
         public static bool AlternateBuffer { set => Console.Write(value ? "\x1b[?1049h" : "\x1b[?1049l"); }
         public static bool ArrangeOnResize { get; set; }
+        public static bool ForceDraw { get; set; }
     }
 
     private static readonly Stopwatch _stopwatch = new();
 
-    public static double RenderTime { get; private set; }
-    public static double FlushTime { get; private set; }
-    public static double DeltaTime => RenderTime + FlushTime;
+    public static int Frame { get; private set; } = 0;
+    public static double DrawTime { get; private set; } = 0;
+    public static double FlushTime { get; private set; } = 0;
+    public static double DeltaTime => DrawTime + FlushTime;
 
     static Shell() => Platform.EnableAnsi();
 
@@ -46,27 +47,36 @@ public static class Shell
         ANSI.Clear(_buffer);
         foreach(var (control, _, cache) in Entries)
             control.Draw(new Region(_buffer, cache));
-        _needsDraw = false;
     }
 
     private static void Update()
     {
-        if(Entries is null) return;
         foreach(var (control, _, cache) in Entries)
             control.Update(new Region(_buffer, cache));
     }
 
     public static void Render()
     {
-        _stopwatch.Restart();
-        _buffer.Clear();
-        if(_lastScreen != Screen && Settings.ArrangeOnResize) Arrange();
-        if(_needsDraw) Draw(); else Update();
-        RenderTime = _stopwatch.Elapsed.TotalSeconds;
+        Frame++;
 
         _stopwatch.Restart();
+        _buffer.Clear();
+
+        bool firstFrame = Frame == 1;
+        bool hasResized = !firstFrame && _lastScreen != Screen;
+        bool requiresArrange = firstFrame || (hasResized && Settings.ArrangeOnResize);
+
+        if(requiresArrange) Arrange();
+        if(requiresArrange || Settings.ForceDraw) Draw(); else Update();
+        if(Settings.ForceDraw) Settings.ForceDraw = false;
+
+        DrawTime = _stopwatch.Elapsed.TotalSeconds;
+        _stopwatch.Restart();
+
         _output.Write(_buffer.WrittenSpan);
         _output.Flush();
+
         FlushTime = _stopwatch.Elapsed.TotalSeconds;
+        _stopwatch.Stop();
     }
 }
