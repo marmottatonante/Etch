@@ -4,7 +4,7 @@ public interface IControl
 {   
     Int2 Size { get; }
     void Draw(Region region);
-    void Update(Region region) { }
+    void Update(Region region);
 }
 
 public sealed class Label(string text) : IControl
@@ -12,6 +12,7 @@ public sealed class Label(string text) : IControl
     public readonly string Text = text;
     public Int2 Size { get; } = new(text.Length, 1);
     public void Draw(Region region) => region.Write(Text.AsSpan());
+    public void Update(Region region) { }
 }
 
 public sealed class Image(string[] content) : IControl
@@ -23,6 +24,7 @@ public sealed class Image(string[] content) : IControl
         for(int i = 0; i < Content.Length; i++)
             region.Write((0, i), Content[i].AsSpan());
     }
+    public void Update(Region region) { }
 }
 
 public sealed class Binder(Func<string> source, int maxLength) : IControl
