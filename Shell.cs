@@ -8,9 +8,9 @@ public static class Shell
     private static readonly ArrayBufferWriter<byte> _buffer = new();
     private static readonly Stream _output = Console.OpenStandardOutput();
 
-    public record struct Entry(IControl Control, Func<Rect, Rect> Layout, Rect Cache)
+    public record struct Entry(IControl Control, Layout Layout, Rect Cache)
     {
-        public Entry(IControl control, Func<Rect, Rect> layout) : this(control, layout, Rect.Empty) { }
+        public Entry(IControl Control, Layout Layout) : this(Control, Layout, Rect.Empty) { }
     }
     public static readonly List<Entry> Entries = [];
     public static Rect Screen => new(Int2.Zero, (Console.WindowWidth, Console.WindowHeight));
@@ -28,7 +28,7 @@ public static class Shell
     public static int Frame { get; private set; } = 0;
     public static double DrawTime { get; private set; } = 0;
     public static double FlushTime { get; private set; } = 0;
-    public static double DeltaTime => DrawTime + FlushTime;
+    public static double RenderTime => DrawTime + FlushTime;
 
     static Shell() => Platform.EnableAnsi();
 
@@ -37,7 +37,8 @@ public static class Shell
         _lastScreen = Screen;
         for(int i = 0; i < Entries.Count; i++)
         {
-            var rect = Entries[i].Layout(_lastScreen);
+            var size = Entries[i].Control.Size;
+            var rect = Entries[i].Layout(_lastScreen, size);
             Entries[i] = Entries[i] with { Cache = rect };
         }
     }
