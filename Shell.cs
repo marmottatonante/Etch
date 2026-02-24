@@ -10,7 +10,7 @@ public static class Shell
 
     private static readonly List<(IControl Control, Layout Layout, Rect Cache)> _entries = [];
     public static void Add(IControl control, Layout layout) => _entries.Add((control, layout, Rect.Empty));
-    public static void Clear() => _entries.Clear();
+    public static void Clear() { _entries.Clear(); Frame = 0; }
     
     public static Rect Screen => new(Int2.Zero, (Console.WindowWidth, Console.WindowHeight));
     private static Rect _lastScreen = Rect.Empty;
