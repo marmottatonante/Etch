@@ -8,11 +8,10 @@ public static class Shell
     private static readonly ArrayBufferWriter<byte> _buffer = new();
     private static readonly Stream _output = Console.OpenStandardOutput();
 
-    public record struct Entry(IControl Control, Layout Layout, Rect Cache)
-    {
-        public Entry(IControl Control, Layout Layout) : this(Control, Layout, Rect.Empty) { }
-    }
-    public static readonly List<Entry> Entries = [];
+    private static readonly List<(IControl Control, Layout Layout, Rect Cache)> _entries = [];
+    public static void Add(IControl control, Layout layout) => _entries.Add((control, layout, Rect.Empty));
+    public static void Clear() => _entries.Clear();
+    
     public static Rect Screen => new(Int2.Zero, (Console.WindowWidth, Console.WindowHeight));
     private static Rect _lastScreen = Rect.Empty;
 
@@ -31,24 +30,24 @@ public static class Shell
     private static void Arrange()
     {
         _lastScreen = Screen;
-        for(int i = 0; i < Entries.Count; i++)
+        for(int i = 0; i < _entries.Count; i++)
         {
-            var size = Entries[i].Control.Size;
-            var rect = Entries[i].Layout(_lastScreen, size);
-            Entries[i] = Entries[i] with { Cache = rect };
+            var size = _entries[i].Control.Size;
+            var rect = _entries[i].Layout(_lastScreen, size);
+            _entries[i] = _entries[i] with { Cache = rect };
         }
     }
 
     private static void Draw()
     {
         ANSI.Clear(_buffer);
-        foreach(var (control, _, cache) in Entries)
+        foreach(var (control, _, cache) in _entries)
             control.Draw(new Region(_buffer, cache));
     }
 
     private static void Update()
     {
-        foreach(var (control, _, cache) in Entries)
+        foreach(var (control, _, cache) in _entries)
             control.Update(new Region(_buffer, cache));
     }
 
