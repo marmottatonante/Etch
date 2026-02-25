@@ -7,51 +7,34 @@ public static partial class Shell
     private static readonly ArrayBufferWriter<byte> _buffer = new();
     private static readonly Stream _output = Console.OpenStandardOutput();
 
-    private static readonly List<(IControl Control, Layout Layout, Rect Cache)> _entries = [];
-
-    private static bool _dirty = false;
-    public static void Add(IControl control, Layout layout) { _entries.Add((control, layout, Rect.Empty)); _dirty = true; }
-    public static void Clear() { _entries.Clear(); _dirty = true; }
-    
-    public static Rect Screen => new(Int2.Zero, (Console.WindowWidth, Console.WindowHeight));
-    private static Rect _lastScreen = Rect.Empty;
+    public static Rect Size => new(Int2.Zero, (Console.WindowWidth, Console.WindowHeight));
+    private static Rect _lastSize = Rect.Empty;
+    public static Scene Scene { get; set; } = new((new Label("Welcome to Etch!"), Layouts.Center));
+    private static Scene _lastScene = null;
 
     public static bool AlternateBuffer { set => Console.Write(value ? "\x1b[?1049h" : "\x1b[?1049l"); }
     public static bool Cursor { set => Console.Write(value ? "\x1b[?25h" : "\x1b[?25l"); }
 
     static Shell() => Platform.EnableAnsi();
 
-    private static void Arrange()
-    {
-        _lastScreen = Screen;
-        for(int i = 0; i < _entries.Count; i++)
-        {
-            var size = _entries[i].Control.Size;
-            var rect = _entries[i].Layout(_lastScreen, size);
-            _entries[i] = _entries[i] with { Cache = rect };
-        }
-    }
-
-    private static void Draw()
-    {
-        ANSI.Clear(_buffer);
-        foreach(var (control, _, cache) in _entries)
-            control.Draw(new Region(_buffer, cache));
-    }
-
-    private static void Update()
-    {
-        foreach(var (control, _, cache) in _entries)
-            control.Update(new Region(_buffer, cache));
-    }
-
     public static void Render()
     {
         Metrics.StartDraw();
 
         _buffer.Clear();
-        bool hasResized = _lastScreen != Screen;
-        if(hasResized || _dirty) { Arrange(); Draw(); _dirty = false; } else Update();
+
+        bool hasResized = _lastSize != Size;
+        bool hasChanged = _lastScene != Scene;
+        if (hasResized || hasChanged)
+        {
+            _lastSize = Size;
+            _lastScene = Scene;
+
+            ANSI.Clear(_buffer);
+            Scene.Arrange(_lastSize);
+            Scene.Draw(_buffer);
+        }
+        else Scene.Update(_buffer);
 
         Metrics.StartFlush();
 
