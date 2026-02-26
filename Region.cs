@@ -2,7 +2,7 @@ using System.Buffers;
 
 namespace Etch;
 
-public readonly ref struct Region(ArrayBufferWriter<byte> buffer, Rect bounds)
+public readonly struct Region(ArrayBufferWriter<byte> buffer, Rect bounds)
 {
     private readonly ArrayBufferWriter<byte> _buffer = buffer;
     private readonly Rect _bounds = bounds;

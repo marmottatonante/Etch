@@ -93,6 +93,27 @@ public sealed class Fixed : Control
     protected override void Draw(Region region) => _child.Render(region);
 }
 
+public sealed class Managed : Control
+{
+    private readonly Control _child;
+    private Region _previousRegion;
+
+    public Managed(Control child)
+    {
+        _child = child;
+        Subscribe(child);
+    }
+
+    internal override Int2 Measure(Int2 available) => _child.Measure(available);
+    protected override void Draw(Region region)
+    {
+        if (_previousRegion.Bounds != Rect.Empty)
+            _previousRegion.Clear();
+        _previousRegion = region;
+        _child.Render(region);
+    }
+}
+
 public sealed class Center : Control
 {
     private readonly Control _child;
@@ -181,16 +202,27 @@ public sealed class Grid : Control
     public Grid(Control[][] cells, Int2? cellSize = null)
     {
         _cells = cells;
+        var widths = cellSize is null ? ComputeWidths(cells) : null;
         _root = new Stack(Direction.Vertical, 0, Alignment.Start,
-            cells.Select(row =>
+            cells.Select((row, r) =>
                 new Stack(Direction.Horizontal, 3, Alignment.Start,
-                    row.Select(cell =>
+                    row.Select((cell, c) =>
                         cellSize is Int2 size
                             ? new Fixed(cell, size)
-                            : cell)
+                            : new Fixed(cell, new Int2(widths![c], 1)))
                     .ToArray()))
             .ToArray());
         Subscribe(_root);
+    }
+
+    private static int[] ComputeWidths(Control[][] cells)
+    {
+        int cols = cells.Max(r => r.Length);
+        var widths = new int[cols];
+        foreach (var row in cells)
+            for (int c = 0; c < row.Length; c++)
+                widths[c] = Math.Max(widths[c], row[c].Measure(Int2.Zero).X);
+        return widths;
     }
 
     public T Get<T>(int row, int col) where T : Control => (T)_cells[row][col];

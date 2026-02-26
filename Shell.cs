@@ -16,6 +16,7 @@ public static partial class Shell
 
     public static Control? Root { get; set; }
 
+    public static void Clear() => Console.Write("\x1b[2J");
     public static void Batch() { Root?.Changed -= Render; }
     public static void Render()
     {
@@ -23,12 +24,18 @@ public static partial class Shell
         Root.Changed -= Render;
         Root.Changed += Render;
 
+        Metrics.StartDraw();
+
         _buffer.Clear();
         Int2 size = Root.Measure(Size);
         Region region = new(_buffer, new(Int2.Zero, size));
         Root.Render(region);
 
+        Metrics.StartFlush();
+
         _output.Write(_buffer.WrittenSpan);
         _output.Flush();
+
+        Metrics.Stop();
     }
 }
