@@ -1,26 +1,45 @@
 ﻿namespace Etch;
 
-public interface IMutable
+public sealed class Property<T>
 {
-    event Action? Changed;
-}
+    public bool Dirty { get; private set; } = true;
 
-public sealed class Property<T>(T initial) : IMutable
-{
-    public event Action? Changed;
+    private Func<T>? _source;
+    public void Bind(Func<T> source) => _source = source;
+    public void Unbind() => _source = null;
 
-    private T _value = initial;
-    public T Value
+    private T _value;
+    public T Value { get => Get(); set => Set(value); }
+
+    public Property(T initial) { _value = initial; }
+    public Property(Func<T> source) { _source = source; _value = Get(); }
+
+    private T Get()
     {
-        get => _value;
-        set => Set(value);
+        if (_source is null) return _value;
+
+        T sourced = _source();
+        if (EqualityComparer<T>.Default.Equals(_value, sourced)) return _value;
+
+        _value = sourced;
+        Dirty = true;
+
+        return _value;
     }
 
     private void Set(T value)
     {
+        if (_source is not null) throw new InvalidOperationException("Cannot set a bound property.");
         if (EqualityComparer<T>.Default.Equals(_value, value)) return;
-
         _value = value;
-        Changed?.Invoke();
+        Dirty = true;
+    }
+
+    public bool TryGet(out T value)
+    {
+        value = Get();
+        if (!Dirty) return false;
+        Dirty = false;
+        return true;
     }
 }
