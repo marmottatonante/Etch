@@ -14,22 +14,18 @@ public static partial class Shell
     public static bool AlternateBuffer { set => Console.Write(value ? "\x1b[?1049h" : "\x1b[?1049l"); }
     public static bool CursorVisible { set => Console.Write(value ? "\x1b[?25h" : "\x1b[?25l"); }
 
-    public static Control? Root { get; set; }
+    public static IControl? Root { get; set; }
 
     public static void Clear() => Console.Write("\x1b[2J");
-    public static void Batch() { Root?.Changed -= Render; }
     public static void Render()
     {
         if (Root is null) return;
-        Root.Changed -= Render;
-        Root.Changed += Render;
 
         Metrics.StartDraw();
 
         _buffer.Clear();
-        Int2 size = Root.Measure(Size);
-        Region region = new(_buffer, new(Int2.Zero, size));
-        Root.Render(region);
+        Root.Measure(Size, out var size);
+        Root.Render(new(_buffer, new(Int2.Zero, size)));
 
         Metrics.StartFlush();
 

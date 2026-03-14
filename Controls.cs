@@ -1,67 +1,82 @@
-using System.Drawing;
-
 namespace Etch;
 
 public interface IControl
 {
-    Int2 Measure(Int2 available);
-    void Draw(Region region);
+    ReadOnlyProperty<Int2> Size { get; }
+    void Render(Region region);
+    void Update(Region region);
+}
+
+public static class ControlExtensions
+{
+    public static T With<T>(this T control, Action<T> configure) where T : IControl
+    {
+        configure(control);
+        return control;
+    }
 }
 
 public sealed class Label : IControl
 {
     public readonly Property<string> Text;
-    public readonly Property<Int2> Size;
+    private readonly Property<Int2> _size;
+    public ReadOnlyProperty<Int2> Size => _size;
 
     public Label(string initial)
     {
         Text = new(initial);
-        Size = new(() => new(Text.Value.Length, 1));
+        _size = new((initial.Length, 1));
+
+        Text.Changed += t => _size.Set((t.Length, 1));
     }
 
-    public Int2 Measure(Int2 available)
-    {
-        Size.TryGet(out _);
-        return Size.Value;
-    }
-    public void Draw(Region region)
-    {
-        if (!Text.TryGet(out var text)) return;
-        region.Write(text);
-    }
+    public void Update(Region region) { if (Text.Dirty) Render(region); }
+    public void Render(Region region) => region.Write(Text.Get());
 }
 
 public sealed class Image : IControl
 {
     public readonly Property<string[]> Lines;
-    public readonly Property<Int2> Size;
+    private readonly Property<Int2> _size;
+    public ReadOnlyProperty<Int2> Size => _size;
 
     public Image(string[] lines)
     {
         Lines = new(lines);
-        Size = new(() => (Lines.Value.Max(l => l.Length), Lines.Value.Length));
+        _size = new((lines.Max(l => l.Length), lines.Length));
+
+        Lines.Changed += l => _size.Set((l.Max(line => line.Length), l.Length));
     }
 
-    public Int2 Measure(Int2 available)
+    public void Update(Region region) { if (Lines.Dirty) Render(region); }
+    public void Render(Region region)
     {
-        Size.TryGet(out _);
-        return Size.Value;
-    }
-    public void Draw(Region region)
-    {
-        if (!Lines.TryGet(out var lines)) return;
+        var lines = Lines.Get();
         for (int i = 0; i < lines.Length; i++)
             region.Write((0, i), lines[i].AsSpan());
     }
 }
 
-public sealed class Center(IControl child) : IControl
+public sealed class Progress : IControl
 {
-    public readonly IControl Child = child;
-    public Int2 Measure(Int2 available) => available;
-    public void Draw(Region region)
+    public readonly Property<double> Current;
+    private readonly Property<int> _percentage;
+    public ReadOnlyProperty<Int2> Size { get; } = new((4, 1));
+
+    public Progress(double minimum, double maximum)
     {
-        if (!Child.Size.TryGet(out var childSize)) return;
-        Child.Draw(region.Slice(region.Bounds.Center(childSize)));
+        Current = new(minimum);
+        _percentage = new(0);
+
+        Current.Changed += c => _percentage.Set((int)((c - minimum) / (maximum - minimum) * 100));
+    }
+
+    public void Update(Region region) { if (_percentage.Dirty) Render(region); }
+    public void Render(Region region)
+    {
+        Span<char> buffer = stackalloc char[4];
+        _percentage.Get().TryFormat(buffer, out _, "D3");
+        buffer[3] = '%';
+        region.Write(buffer);
     }
 }
