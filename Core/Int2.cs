@@ -1,4 +1,4 @@
-namespace Etch;
+namespace Etch.Core;
 
 public readonly record struct Int2(int X, int Y)
 {

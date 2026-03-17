@@ -1,4 +1,5 @@
 using System.Buffers;
+using Etch.Core;
 
 namespace Etch;
 
@@ -7,9 +8,7 @@ public static partial class Shell
     private static readonly ArrayBufferWriter<byte> _buffer = new();
     private static readonly Stream _output = Console.OpenStandardOutput();
 
-    static Shell() => Platform.EnableAnsi();
-
-    public static Int2 Size => new(Console.WindowWidth, Console.WindowHeight);
+    public static Int2 ScreenSize => new(Console.WindowWidth, Console.WindowHeight);
 
     public static bool AlternateBuffer { set => Console.Write(value ? "\x1b[?1049h" : "\x1b[?1049l"); }
     public static bool CursorVisible { set => Console.Write(value ? "\x1b[?25h" : "\x1b[?25l"); }
@@ -24,8 +23,13 @@ public static partial class Shell
         Metrics.StartDraw();
 
         _buffer.Clear();
-        Root.Measure(Size, out var size);
-        Root.Render(new(_buffer, new(Int2.Zero, size)));
+
+        Int2 size = Root.Measure(ScreenSize);
+        Rect rect = new(Int2.Zero, size);
+        Surface surface = new(_buffer, rect);
+
+        Root.Arrange(surface);
+        Root.Render();
 
         Metrics.StartFlush();
 

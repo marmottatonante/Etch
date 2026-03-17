@@ -1,7 +1,7 @@
 using System.Buffers;
 using System.Text;
 
-namespace Etch;
+namespace Etch.Core;
 
 public static class ANSI
 {
