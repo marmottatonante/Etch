@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Etch.Demo/Etch.Demo.csproj" />
+  <Project Path="Etch/Etch.csproj" />
+</Solution>
