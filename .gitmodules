@@ -1,3 +1,3 @@
-[submodule "Pith"]
-	path = Pith
-	url = https://github.com/marmottatonante/Pith
+[submodule "Keystone"]
+	path = Keystone
+	url = https://github.com/marmottatonante/Keystone
