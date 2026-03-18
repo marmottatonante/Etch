@@ -1,4 +1,4 @@
-namespace Etch.Core;
+namespace Etch;
 
 public enum Color : byte
 {

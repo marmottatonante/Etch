@@ -1,6 +1,7 @@
 using System.Buffers;
+using Pith.Geometry;
 
-namespace Etch.Core;
+namespace Etch;
 
 public readonly struct Surface(ArrayBufferWriter<byte> buffer, Rect bounds)
 {

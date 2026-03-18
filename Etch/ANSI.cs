@@ -1,7 +1,8 @@
 using System.Buffers;
 using System.Text;
+using Pith.Geometry;
 
-namespace Etch.Core;
+namespace Etch;
 
 public static class ANSI
 {

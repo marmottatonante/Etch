@@ -1,5 +1,5 @@
 using System.Buffers;
-using Etch.Core;
+using Pith.Geometry;
 
 namespace Etch;
 
