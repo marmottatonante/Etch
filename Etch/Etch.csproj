@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\Pith\Pith.csproj" />
+    <ProjectReference Include="..\Keystone\Keystone.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
