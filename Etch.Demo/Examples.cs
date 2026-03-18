@@ -27,8 +27,7 @@ public static class Examples
                 new Image(Figlet.Split('\n')),
                 new Stack(Direction.Vertical, Alignment.Center, 0,
                     new Label("Benchmarking"),
-                    new Progress(0, 10)
-                        .With<Progress>(p => p.Current.Bind(current)))));
+                    new Progress(0, 10, current))));
         Shell.Render();
 
         Shell.Metrics.Active = true;
@@ -62,13 +61,13 @@ public static class Examples
         Shell.Root = new Center(
             new Stack(Direction.Vertical, Alignment.Center, 1,
                 new Image(Figlet.Split('\n')),
-                new Grid(2, 0, [
-                    [new Label(""),          new Label("Total"),                     new Label("Avg"),        new Label("Avg FPS")     ],
-                    [new Label("Draw"),      new Label(Sec(totalDraw)),              new Label(Ms(avgDraw)),  new Label(Fps(avgDraw))  ],
-                    [new Label("Flush"),     new Label(Sec(totalFlush)),             new Label(Ms(avgFlush)), new Label(Fps(avgFlush)) ],
-                    [new Label("Delta"),     new Label(Sec(totalDraw + totalFlush)), new Label(Ms(avgDelta)), new Label(Fps(avgDelta)) ]]),
+                new Stack(Direction.Vertical, Alignment.Start, 0,
+                    new Stack(Direction.Horizontal, Alignment.Start, 2, [new Label(""),          new Label("Total"),                     new Label("Avg"),        new Label("Avg FPS")]),
+                    new Stack(Direction.Horizontal, Alignment.Start, 2, [new Label("Draw"),      new Label(Sec(totalDraw)),              new Label(Ms(avgDraw)),  new Label(Fps(avgDraw))  ]),
+                    new Stack(Direction.Horizontal, Alignment.Start, 2, [new Label("Flush"),     new Label(Sec(totalFlush)),             new Label(Ms(avgFlush)), new Label(Fps(avgFlush)) ]),
+                    new Stack(Direction.Horizontal, Alignment.Start, 2, [new Label("Delta"),     new Label(Sec(totalDraw + totalFlush)), new Label(Ms(avgDelta)), new Label(Fps(avgDelta)) ]),
                 new Label($"Score: {iterations}"),
-                new Label("Press any key to continue")));
+                new Label("Press any key to continue"))));
         Shell.Render();
         Console.ReadKey();
 

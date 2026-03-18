@@ -8,7 +8,7 @@ public sealed class Progress : Control
     public readonly double Minimum;
     public readonly double Maximum;
     public readonly Property<double> Current;
-    public readonly ReadOnlyProperty<int> Percentage;
+    public readonly IReadOnlyProperty<int> Percentage;
 
     public Progress(double minimum, double maximum)
     {
@@ -21,6 +21,9 @@ public sealed class Progress : Control
         Percentage = percentage.AsReadOnly();
     }
 
-    public override Int2 Measure(Int2 available) => new(4, 1);
+    public Progress(double minimum, double maximum, Property<double> source)
+        : this(minimum, maximum) => Current.Bind(source);
+
+    public override Property<Int2> Size { get; } = new((4, 1));
     public override void Render(Surface surface) => surface.Write($"{Percentage.Value:000}%");
 }

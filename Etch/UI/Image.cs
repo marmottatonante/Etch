@@ -6,8 +6,15 @@ namespace Etch.UI;
 public sealed class Image : Control
 {
     public readonly Property<string[]> Lines;
-    public Image(string[] initial) => Lines = Invalidating(initial);
-    public override Int2 Measure(Int2 available) => new(Lines.Value[0].Length, Lines.Value.Length);
+
+    public Image(string[] initial)
+    {
+        Lines = Invalidating(initial);
+        Size = new((Lines.Value.Max(l => l.Length), Lines.Value.Length));
+        Size.Bind(Lines, lines => (lines.Max(l => l.Length), lines.Length));
+    }
+
+    public override Property<Int2> Size { get; }
     public override void Render(Surface surface)
     {
         for (int i = 0; i < Lines.Value.Length; i++)

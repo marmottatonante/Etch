@@ -5,13 +5,21 @@ namespace Etch.UI;
 public enum Direction { Vertical, Horizontal }
 public enum Alignment { Start, Center, End }
 
-public sealed class Stack(Direction direction, Alignment alignment, int spacing, params IControl[] children) : IControl
+public class Stack : Layout
 {
-    private readonly IControl[] _children = children;
-    private readonly Direction _direction = direction;
-    private readonly Alignment _alignment = alignment;
-    private readonly int _spacing = spacing;
-    private Int2[] _childSizes = [];
+    private readonly Direction _direction;
+    private readonly Alignment _alignment;
+    private readonly int _spacing;
+
+    public Stack(Direction direction,
+                 Alignment alignment, 
+                 int spacing, 
+                 params Renderable[] children) : base(children)
+    {
+        _direction = direction;
+        _alignment = alignment;
+        _spacing = spacing;
+    }
 
     private int Primary(Int2 size) => _direction == Direction.Vertical ? size.Y : size.X;
     private int Cross(Int2 size) => _direction == Direction.Vertical ? size.X : size.Y;
@@ -25,42 +33,27 @@ public sealed class Stack(Direction direction, Alignment alignment, int spacing,
         _ => 0
     };
 
-    public Int2 Measure(Int2 available)
+    protected override Int2 ComputeSize(Int2 available, Int2[] childSizes)
     {
-        _childSizes = new Int2[_children.Length];
-        var primary = 0;
-        var cross = 0;
-
-        for (int i = 0; i < _children.Length; i++)
-        {
-            _childSizes[i] = _children[i].Measure(available);
-            primary += Primary(_childSizes[i]);
-            cross = Math.Max(cross, Cross(_childSizes[i]));
-        }
-
-        if (_children.Length > 1)
-            primary += _spacing * (_children.Length - 1);
-
+        var primary = childSizes.Sum(s => Primary(s)) + _spacing * (childSizes.Length - 1);
+        var cross = childSizes.Max(s => Cross(s));
         return ToSize(primary, cross);
     }
 
-    public void Arrange(Surface surface)
+    protected override Surface[] ComputeSurfaces(Surface surface, Int2[] childSizes)
     {
+        var surfaces = new Surface[childSizes.Length];
         var primary = 0;
         var crossSize = Cross(surface.Bounds.Size);
 
-        for (int i = 0; i < _children.Length; i++)
+        for (int i = 0; i < childSizes.Length; i++)
         {
-            var childCross = Cross(_childSizes[i]);
+            var childCross = Cross(childSizes[i]);
             var position = ToPosition(primary, CrossOffset(crossSize, childCross));
-            _children[i].Arrange(surface.Slice(new Rect(position, _childSizes[i])));
-            primary += Primary(_childSizes[i]) + _spacing;
+            surfaces[i] = surface.Slice(new Rect(position, childSizes[i]));
+            primary += Primary(childSizes[i]) + _spacing;
         }
-    }
 
-    public void Render()
-    {
-        foreach (var child in _children)
-            child.Render();
+        return surfaces;
     }
 }

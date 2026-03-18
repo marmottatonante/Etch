@@ -3,50 +3,32 @@ using Pith.Reactive;
 
 namespace Etch;
 
-public interface IControl
-{
-    Int2 Measure(Int2 available);
-    void Arrange(Surface surface);
-    void Render();
-}
-
-public abstract class Control : IControl
+public abstract class Control : Renderable
 {
     private Surface? _surface;
-    private bool _invalid = true;
 
-    protected Property<T> Invalidating<T>(T initial)
+    public Control()
     {
-        var property = new Property<T>(initial);
-        property.Changed += Invalidate;
-        return property;
+        Parent.Changing += () => { if (Parent.Value is not null) Size.Changed -= Parent.Value.Invalidate; };
+        Parent.Changed += () => { if (Parent.Value is not null) Size.Changed += Parent.Value.Invalidate; };
     }
 
-    protected void Invalidate() => _invalid = true;
-
-    void IControl.Arrange(Surface surface)
+    public sealed override Int2 Measure(Int2 available) => Size.Value;
+    public sealed override void Arrange(Surface surface)
     {
         if (_surface.HasValue && _surface.Value.Bounds == surface.Bounds) return;
-
         _surface?.Clear();
         _surface = surface;
         Invalidate();
     }
-    void IControl.Render()
+    public sealed override void Render()
     {
         if (!_surface.HasValue) throw new InvalidOperationException("Control has not been arranged yet.");
-        if (!_invalid) return;
-
-        _invalid = false;
+        if (!Invalid) return;
+        Invalid = false;
         Render(_surface.Value);
     }
 
-    public T With<T>(Action<T> configure) where T : Control
-    {
-        configure((T)this);
-        return (T)this;
-    }
-
-    public abstract Int2 Measure(Int2 available);
+    public abstract Property<Int2> Size { get; }
     public abstract void Render(Surface surface);
 }

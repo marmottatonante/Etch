@@ -13,7 +13,7 @@ public static partial class Shell
     public static bool AlternateBuffer { set => Console.Write(value ? "\x1b[?1049h" : "\x1b[?1049l"); }
     public static bool CursorVisible { set => Console.Write(value ? "\x1b[?25h" : "\x1b[?25l"); }
 
-    public static IControl? Root { get; set; }
+    public static Renderable? Root { get; set; }
 
     public static void Clear() => Console.Write("\x1b[2J");
     public static void Render()
