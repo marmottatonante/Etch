@@ -1,4 +1,4 @@
-namespace Etch;
+namespace Etch.Core;
 
 public readonly record struct Rect(Int2 Position, Int2 Size)
 {
