@@ -1,4 +1,5 @@
-﻿using Keystone.Primitives;
+﻿using Keystone.Observables;
+using Keystone.Primitives;
 
 namespace Etch;
 
@@ -8,6 +9,7 @@ public partial class Scene(Stream output, Int2 size)
     private readonly List<Control> _controls = [];
     private readonly HashSet<Control> _dirty = [];
 
+    public IReadOnlyProperty<Int2> Size => _canvas.Size;
     public readonly Profiler Metrics = new();
 
     internal void Invalidate(Control control)
