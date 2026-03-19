@@ -36,15 +36,19 @@ public static class Examples
                               (Console.WindowWidth, Console.WindowHeight));
 
         var title = new Label("Benchmarking");
-        var progress = new Progress(0, 10).BottomOf(title, alignment: Layouts.Alignment.Center);
-        benchmark.Add(title).Add(progress).Render();
-        benchmark.Metrics.Active = true;
+        var progress = new Progress(0, 10).BottomOf(title, 0, Layouts.Alignment.Center);
+        var iteration = new Label("Waiting").BottomOf(progress, 2, Layouts.Alignment.Center);
+        var iteration2 = new Label("Waiting").BottomOf(iteration, 0, Layouts.Alignment.Center);
+        benchmark.Add(title).Add(progress).Add(iteration).Add(iteration2).Render();
 
+        benchmark.Metrics.Active = true;
         var sw = Stopwatch.StartNew();
         int iterations = 0;
         while (sw.Elapsed.TotalSeconds < 10)
         {
             progress.Current.Value = sw.Elapsed.TotalSeconds;
+            iteration.Text.Value = iterations.ToString();
+            iteration2.Text.Bind(() => iteration.Text.Value, iteration.Text);
             benchmark.Render();
             iterations++;
         }
@@ -55,7 +59,7 @@ public static class Examples
 
         static string Ms(double seconds) => $"{seconds * 1000:F3}ms";
         static string Sec(double seconds) => $"{seconds:F3}s";
-        static string Fps(double seconds) => $"{1.0 / seconds}FPS";
+        static string Fps(double seconds) => $"{1.0 / seconds:F0}fps";
 
         Scene results = new(Console.OpenStandardOutput(), 
                             (Console.WindowWidth, Console.WindowHeight));
