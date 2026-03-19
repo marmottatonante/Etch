@@ -57,7 +57,7 @@ public static class Examples
 
         Console.Clear();
 
-        static string Ms(double seconds) => $"{seconds * 1000:F3}ms";
+        static string Ms(double seconds) => $"{seconds * 1000:F4}ms";
         static string Sec(double seconds) => $"{seconds:F3}s";
         static string Fps(double seconds) => $"{1.0 / seconds:F0}fps";
 
