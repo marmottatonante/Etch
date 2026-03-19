@@ -1,34 +1,31 @@
-﻿using Keystone.Primitives;
-using Keystone.Observables;
+﻿using Keystone.Observables;
+using Keystone.Primitives;
 
 namespace Etch;
 
-public abstract class Control : Renderable
+public abstract class Control
 {
-    private Surface? _surface;
+    /// <summary>The scene this control is in.</summary>
+    public Scene? Scene { get; internal set; }
 
-    public Control()
+    /// <summary>The position of this control.</summary>
+    public readonly Property<Int2> Position;
+    /// <summary>The size of this control.</summary>
+    public readonly Property<Int2> Size;
+
+    protected Control()
     {
-        Parent.Changing += () => { if (Parent.Value is not null) Size.Changed -= Parent.Value.Invalidate; };
-        Parent.Changed += () => { if (Parent.Value is not null) Size.Changed += Parent.Value.Invalidate; };
+        Position = Invalidating(Int2.Zero);
+        Size = Invalidating(Int2.Zero);
     }
 
-    public sealed override Int2 Measure(Int2 available) => Size.Value;
-    public sealed override void Arrange(Surface surface)
+    protected void Invalidate() => Scene?.Invalidate(this);
+    protected Property<T> Invalidating<T>(T initial)
     {
-        if (_surface.HasValue && _surface.Value.Bounds == surface.Bounds) return;
-        _surface?.Clear();
-        _surface = surface;
-        Invalidate();
-    }
-    public sealed override void Render()
-    {
-        if (!_surface.HasValue) throw new InvalidOperationException("Control has not been arranged yet.");
-        if (!Invalid) return;
-        Invalid = false;
-        Render(_surface.Value);
+        var property = new Property<T>(initial);
+        property.Changing += Invalidate;
+        return property;
     }
 
-    public abstract Property<Int2> Size { get; }
-    public abstract void Render(Surface surface);
+    public abstract void Draw(Canvas canvas);
 }

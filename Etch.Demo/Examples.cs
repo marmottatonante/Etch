@@ -1,5 +1,3 @@
-using Etch.UI;
-using Keystone.Observables;
 using System.Diagnostics;
 
 namespace Etch.Demo;
@@ -15,22 +13,33 @@ public static class Examples
     .||.....|  '|.'  '|...' .||. ||.
     """;
 
+    public static void HelloWorld()
+    {
+        Scene helloWorld = new(Console.OpenStandardOutput(),
+                               (Console.WindowWidth, Console.WindowHeight));
+
+        var title = new Label("Hello");
+        var subtitle = new Label("World").Under(title);
+        helloWorld.Add(title).Add(subtitle).Render();
+
+        Console.ReadKey();
+
+        title.Position.Value += (0, 1);
+        helloWorld.Render();
+
+        Console.ReadKey();
+    }
+
     public static void Benchmark()
     {
-        Shell.AlternateBuffer = true;
-        Shell.CursorVisible = false;
+        Scene benchmark = new(Console.OpenStandardOutput(),
+                              (Console.WindowWidth, Console.WindowHeight));
 
-        Property<double> current = new(0);
+        var title = new Label("Benchmarking");
+        var progress = new Progress(0, 10).Under(title, alignment: Layouts.Alignment.Center);
+        benchmark.Add(title).Add(progress).Render();
+        benchmark.Metrics.Active = true;
 
-        Shell.Root = new Center(
-            new Stack(Direction.Vertical, Alignment.Center, 2,
-                new Image(Figlet.Split('\n')),
-                new Stack(Direction.Vertical, Alignment.Center, 0,
-                    new Label("Benchmarking"),
-                    new Progress(0, 10, current))));
-        Shell.Render();
-
-        Shell.Metrics.Active = true;
         var sw = Stopwatch.StartNew();
         double totalDraw = 0;
         double totalFlush = 0;
@@ -38,16 +47,15 @@ public static class Examples
         int iterations = 0;
         while (sw.Elapsed.TotalSeconds < 10)
         {
-            current.Value = sw.Elapsed.TotalSeconds;
-            Shell.Render();
+            progress.Current.Value = sw.Elapsed.TotalSeconds;
+            benchmark.Render();
 
-            totalDraw += Shell.Metrics.DrawTime;
-            totalFlush += Shell.Metrics.FlushTime;
+            totalDraw += benchmark.Metrics.DrawTime;
+            totalFlush += benchmark.Metrics.FlushTime;
             iterations++;
         }
 
         sw.Stop();
-        Shell.Metrics.Active = false;
 
         static string Ms(double seconds) => $"{seconds * 1000:F3}ms";
         static string Sec(double seconds) => $"{seconds:F3}s";
@@ -57,21 +65,9 @@ public static class Examples
         double avgFlush = totalFlush / iterations;
         double avgDelta = avgDraw + avgFlush;
 
-        Shell.Clear();
-        Shell.Root = new Center(
-            new Stack(Direction.Vertical, Alignment.Center, 1,
-                new Image(Figlet.Split('\n')),
-                new Stack(Direction.Vertical, Alignment.Start, 0,
-                    new Stack(Direction.Horizontal, Alignment.Start, 2, [new Label(""),          new Label("Total"),                     new Label("Avg"),        new Label("Avg FPS")]),
-                    new Stack(Direction.Horizontal, Alignment.Start, 2, [new Label("Draw"),      new Label(Sec(totalDraw)),              new Label(Ms(avgDraw)),  new Label(Fps(avgDraw))  ]),
-                    new Stack(Direction.Horizontal, Alignment.Start, 2, [new Label("Flush"),     new Label(Sec(totalFlush)),             new Label(Ms(avgFlush)), new Label(Fps(avgFlush)) ]),
-                    new Stack(Direction.Horizontal, Alignment.Start, 2, [new Label("Delta"),     new Label(Sec(totalDraw + totalFlush)), new Label(Ms(avgDelta)), new Label(Fps(avgDelta)) ]),
-                new Label($"Score: {iterations}"),
-                new Label("Press any key to continue"))));
-        Shell.Render();
-        Console.ReadKey();
-
-        Shell.AlternateBuffer = false;
-        Shell.CursorVisible = true;
+        Console.Clear();
+        Console.WriteLine($"Average Draw: {Ms(avgDraw)} - Average Flush: {Ms(avgFlush)} - Average Delta: {Ms(avgDelta)}");
+        Console.WriteLine($"Total Draw: {Sec(totalDraw)} - Total Flush: {Sec(totalFlush)} - Total Delta: {Sec(totalDraw + totalFlush)}");
+        Console.WriteLine($"Score: {iterations}");
     }
 }
