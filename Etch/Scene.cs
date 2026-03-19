@@ -15,6 +15,7 @@ public partial class Scene(Stream output, Int2 size)
     internal void Invalidate(Control control)
     {
         // Can optimize further by clearing only if size changed.
+        // Should also optimize to avoid new string allocation.
         for (int y = 0; y < control.Size.Value.Y; y++)
             _canvas.Move(control.Position.Value + new Int2(0, y))
                    .Write(new string(' ', control.Size.Value.X));
