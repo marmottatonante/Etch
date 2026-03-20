@@ -38,8 +38,7 @@ public static class Examples
         var title = new Label("Benchmarking");
         var progress = new Progress(0, 10).BottomOf(title, 0, Layouts.Alignment.Center);
         var iteration = new Label("Waiting").BottomOf(progress, 2, Layouts.Alignment.Center);
-        var iteration2 = new Label("Waiting").BottomOf(iteration, 0, Layouts.Alignment.Center);
-        benchmark.Add(title).Add(progress).Add(iteration).Add(iteration2).Render();
+        benchmark.Add(title).Add(progress).Add(iteration).Render();
 
         benchmark.Metrics.Active = true;
         var sw = Stopwatch.StartNew();
@@ -48,7 +47,6 @@ public static class Examples
         {
             progress.Current.Value = sw.Elapsed.TotalSeconds;
             iteration.Text.Value = iterations.ToString();
-            iteration2.Text.Bind(() => iteration.Text.Value, iteration.Text);
             benchmark.Render();
             iterations++;
         }
