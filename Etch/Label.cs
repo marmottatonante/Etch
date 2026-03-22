@@ -1,17 +1,28 @@
-﻿using Keystone.Observables;
+﻿using Keystone.Geometry;
+using Keystone.Reactivity;
 
 namespace Etch;
 
-public sealed class Label : Control
+public sealed class Label : ILayoutable
 {
-    public readonly Property<string> Text;
+    public Property<string> Text { get; }
+    public IWatchable Content => Text; 
 
-    public Label(string initial = "")
+    public Property<Int2> Position { get; }
+    public IReadOnlyProperty<Int2> Size { get; }
+
+    public Label(string initial)
     {
-        Text = Invalidating(initial);
-        Size.Bind(() => (Text.Value.Length, 1), Text);
+        Text = new(initial);
+
+        Position = new(Int2.Zero);
+        Size = new Property<Int2>(ComputeSize, Text);
     }
 
-    public override void Draw(Canvas canvas) =>
-        canvas.Move(Position.Value).Write(Text.Value);
+    private Int2 ComputeSize() => (Text.Value.Length, 1);
+
+    public void Render(AnsiBuilder builder) => 
+        builder.Move(Position.Value).Write(Text.Value);
+    public void Clear(AnsiBuilder builder) =>
+        builder.Move(Position.Value).Blank(Size.Value.X);
 }

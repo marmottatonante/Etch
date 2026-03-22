@@ -1,57 +1,28 @@
-﻿using Keystone.Observables;
-using Keystone.Primitives;
+﻿namespace Etch;
 
-namespace Etch;
-
-public partial class Scene(Stream output, Int2 size)
+public class Scene(Stream output)
 {
-    private readonly Canvas _canvas = new(output, size);
-    private readonly List<Control> _controls = [];
-    private readonly HashSet<Control> _dirty = [];
+    private readonly Stream _output = output;
+    private readonly AnsiBuilder _ansiBuilder = new();
 
-    public IReadOnlyProperty<Int2> Size => _canvas.Size;
-    public readonly Profiler Metrics = new();
-
-    internal void Invalidate(Control control)
+    public void Manage(params IRenderable[] renderables)
     {
-        // Can optimize further by clearing only if size changed.
-        // Should also optimize to avoid new string allocation.
-        for (int y = 0; y < control.Size.Value.Y; y++)
-            _canvas.Move(control.Position.Value + new Int2(0, y))
-                   .Write(new string(' ', control.Size.Value.X));
-
-        _dirty.Add(control);
+        foreach (IRenderable renderable in renderables)
+        {
+            renderable.Position.Changing += () => renderable.Clear(_ansiBuilder);
+            renderable.Position.Changed += () => renderable.Render(_ansiBuilder);
+            renderable.Size.Changing += () => renderable.Clear(_ansiBuilder);
+            renderable.Content.Changed += () => renderable.Render(_ansiBuilder);
+        }
     }
 
-    public Scene Add(Control control)
+    public void Flush()
     {
-        control.Scene = this;
-        _controls.Add(control);
-        _dirty.Add(control);
-        return this;
-    }
+        if (_ansiBuilder.Buffer.WrittenCount == 0) return;
 
-    public void Remove(Control control)
-    {
-        control.Scene = null;
-        _controls.Remove(control);
-        _dirty.Remove(control);
-    }
+        _output.Write(_ansiBuilder.Buffer.WrittenSpan);
+        _output.Flush();
 
-    public void Render()
-    {
-        if (_dirty.Count == 0) return;
-
-        Metrics.StartDraw();
-
-        foreach (var control in _dirty)
-            control.Draw(_canvas);
-        _dirty.Clear();
-
-        Metrics.StartFlush();
-
-        _canvas.Flush();
-
-        Metrics.Stop();
+        _ansiBuilder.Buffer.Clear();
     }
 }

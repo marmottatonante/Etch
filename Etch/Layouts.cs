@@ -1,11 +1,11 @@
-﻿using Keystone.Primitives;
+﻿using Keystone.Geometry;
 
 namespace Etch;
 
 public static class Layouts
 {
     public enum Alignment { Start, Center, End };
-    public static T BottomOf<T>(this T control, Control target, int spacing = 0, Alignment alignment = Alignment.Start) where T : Control
+    public static T BottomOf<T>(this T control, ILayoutable target, int spacing = 0, Alignment alignment = Alignment.Start) where T : ILayoutable
     {
         control.Position.Bind(
             () =>
@@ -22,7 +22,7 @@ public static class Layouts
         return control;
     }
 
-    public static T RightOf<T>(this T control, Control target, int spacing = 0, Alignment alignment = Alignment.Start) where T : Control
+    public static T RightOf<T>(this T control, ILayoutable target, int spacing = 0, Alignment alignment = Alignment.Start) where T : ILayoutable
     {
         control.Position.Bind(
             () =>

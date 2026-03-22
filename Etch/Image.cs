@@ -1,24 +1,35 @@
-﻿using Keystone.Observables;
-using Keystone.Primitives;
+﻿using Keystone.Geometry;
+using Keystone.Reactivity;
 
 namespace Etch;
 
-public sealed class Image : Control
+public sealed class Image : ILayoutable
 {
-    public readonly Property<string[]> Lines;
+    public Property<string[]> Lines { get; }
+    public IWatchable Content => Lines;
 
-    public Image(string[] initial)
+    public Property<Int2> Position { get; }
+    public IReadOnlyProperty<Int2> Size { get; }
+
+    public Image(string[] lines)
     {
-        Lines = Invalidating(initial);
-        Size.Bind(
-            () => new Int2(Lines.Value.Max(l => l.Length), Lines.Value.Length),
-            Lines);
+        Lines = new(lines);
+
+        Position = new(Int2.Zero);
+        Size = new Property<Int2>(ComputeSize, Lines);
     }
 
-    public override void Draw(Canvas canvas)
+    private Int2 ComputeSize() => Lines.Value.Length == 0 ? Int2.Zero
+        : (Lines.Value.Max(l => l.Length), Lines.Value.Length);
+
+    public void Render(AnsiBuilder builder)
     {
-        for (int y = 0; y < Lines.Value.Length; y++)
-            canvas.Move(Position.Value + new Int2(0, y))
-                  .Write(Lines.Value[y]);
+        for (int i = 0; i < Size.Value.Y; i++)
+            builder.Move((Position.Value.X, Position.Value.Y + i)).Write(Lines.Value[i]);
+    }
+    public void Clear(AnsiBuilder builder)
+    {
+        for (int i = 0; i < Size.Value.Y; i++)
+            builder.Move((Position.Value.X, Position.Value.Y + i)).Blank(Size.Value.X);
     }
 }

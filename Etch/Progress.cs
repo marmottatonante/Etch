@@ -1,29 +1,34 @@
-﻿using Keystone.Observables;
+﻿using Keystone.Geometry;
+using Keystone.Reactivity;
 
 namespace Etch;
 
-public sealed class Progress : Control
+public sealed class Progress : ILayoutable
 {
-    public readonly double Minimum;
-    public readonly double Maximum;
-    public readonly Property<double> Current;
-    public readonly IReadOnlyProperty<int> Percentage;
+    public double Minimum { get; }
+    public double Maximum { get; }
+    public Property<double> Current { get; }
+    public Property<int> Percentage { get; }
+    public IWatchable Content => Percentage;
 
-    public Progress(double minimum, double maximum, double initial = 0)
+    public Property<Int2> Position { get; }
+    public IReadOnlyProperty<Int2> Size { get; }
+
+    public Progress(double minimum, double maximum)
     {
         Minimum = minimum;
         Maximum = maximum;
-        Current = new(initial);
+        Current = new(minimum);
+        Percentage = new(ComputePercentage, Current);
 
-        Property<int> percentage = Invalidating(0);
-        percentage.Bind(
-            () => (int)((Current.Value - Minimum) / (Maximum - Minimum) * 100), 
-            Current);
-        Percentage = percentage.AsReadOnly();
-
-        Size.Value = (4, 1);
+        Position = new(Int2.Zero);
+        Size = new Property<Int2>((4, 1));
     }
 
-    public override void Draw(Canvas canvas) =>
-        canvas.Move(Position.Value).Write($"{Percentage.Value:000}%");
+    private int ComputePercentage() => (int)((Current.Value - Minimum) / (Maximum - Minimum) * 100);
+
+    public void Render(AnsiBuilder builder) => 
+        builder.Move(Position.Value).Write($"{Percentage.Value:000}%");
+    public void Clear(AnsiBuilder builder) =>
+        builder.Move(Position.Value).Blank(Size.Value.X);
 }
