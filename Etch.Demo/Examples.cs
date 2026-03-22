@@ -13,23 +13,6 @@ public static class Examples
     .||.....|  '|.'  '|...' .||. ||.
     """;
 
-    public static void HelloWorld()
-    {
-        Scene helloWorld = new(Console.OpenStandardOutput());
-
-        var title = new Label("Hello");
-        var subtitle = new Label("World").BottomOf(title);
-        helloWorld.Manage(title, subtitle);
-
-        helloWorld.Flush();
-        Console.ReadKey();
-
-        title.Position.Value += (0, 1);
-        helloWorld.Flush();
-
-        Console.ReadKey();
-    }
-
     public static void Benchmark()
     {
         Scene benchmark = new(Console.OpenStandardOutput());
@@ -40,8 +23,8 @@ public static class Examples
         benchmark.Manage(title, progress, iteration);
         benchmark.Flush();
 
-        var sw = Stopwatch.StartNew();
         int iterations = 0;
+        var sw = Stopwatch.StartNew();
         while (sw.Elapsed.TotalSeconds < 10)
         {
             progress.Current.Value = sw.Elapsed.TotalSeconds;
@@ -57,7 +40,7 @@ public static class Examples
         var score = new Label("");
         results.Manage(score);
 
-        score.Text.Value = $"Score: {iterations}";
+        score.Text.Value = $"Rendered {iterations} times in {sw.Elapsed.TotalSeconds} sec.";
         results.Flush();
 
         Console.ReadKey();
