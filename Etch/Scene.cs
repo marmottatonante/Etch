@@ -13,6 +13,8 @@ public class Scene(Stream output)
             renderable.Position.Changed += () => renderable.Render(_ansiBuilder);
             renderable.Size.Changing += () => renderable.Clear(_ansiBuilder);
             renderable.Content.Changed += () => renderable.Render(_ansiBuilder);
+
+            renderable.Render(_ansiBuilder);
         }
     }
 
