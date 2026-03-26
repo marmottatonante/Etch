@@ -3,11 +3,8 @@ using Keystone.Reactivity;
 
 namespace Etch;
 
-public interface ILayoutable : IRenderable
+public interface ILayoutable
 {
-    new Property<Int2> Position { get; }
-    new IReadOnlyProperty<Int2> Size { get; }
-
-    IWatchable IRenderable.Position => Position;
-    IWatchable IRenderable.Size => Size;
+    Property<Int2> Position { get; }
+    IReadOnlyProperty<Int2> Size { get; }
 }

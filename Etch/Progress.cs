@@ -3,7 +3,7 @@ using Keystone.Reactivity;
 
 namespace Etch;
 
-public sealed class Progress : ILayoutable
+public sealed class Progress : IRenderable, ILayoutable
 {
     public double Minimum { get; }
     public double Maximum { get; }
@@ -13,6 +13,8 @@ public sealed class Progress : ILayoutable
 
     public Property<Int2> Position { get; }
     public IReadOnlyProperty<Int2> Size { get; }
+    IWatchable IRenderable.Position => Position;
+    IWatchable IRenderable.Size => Size;
 
     public Progress(double minimum, double maximum)
     {
@@ -25,10 +27,11 @@ public sealed class Progress : ILayoutable
         Size = new Property<Int2>((4, 1));
     }
 
-    private int ComputePercentage() => (int)((Current.Value - Minimum) / (Maximum - Minimum) * 100);
+    private int ComputePercentage() => 
+        (int)((Current.Value - Minimum) / (Maximum - Minimum) * 100);
 
-    public void Render(AnsiBuilder builder) => 
-        builder.Move(Position.Value).Write($"{Percentage.Value:000}%");
-    public void Clear(AnsiBuilder builder) =>
-        builder.Move(Position.Value).Blank(Size.Value.X);
+    public void Render(Canvas canvas) =>
+        canvas.Move(Position.Value).Write($"{Percentage.Value:000}%");
+    public void Clear(Canvas canvas) =>
+        canvas.Move(Position.Value).Blank(Size.Value.X);
 }

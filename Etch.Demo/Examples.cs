@@ -15,13 +15,13 @@ public static class Examples
 
     public static void Benchmark()
     {
-        Scene benchmark = new(Console.OpenStandardOutput());
 
-        var title = new Label("Benchmarking");
-        var progress = new Progress(0, 10).BottomOf(title, 0, Layouts.Alignment.Center);
-        var iteration = new Label("Waiting").BottomOf(progress, 2, Layouts.Alignment.Center);
-        benchmark.Manage(title, progress, iteration);
-        benchmark.Flush();
+        var logo = new Image(Figlet.Split('\n'));
+        var title = new Label("Benchmarking").BottomOf(logo, 1, Extensions.Alignment.Center);
+        var progress = new Progress(0, 10).BottomOf(title, 0, Extensions.Alignment.Center);
+        var iteration = new Label("Waiting").BottomOf(progress, 1, Extensions.Alignment.Center);
+        
+        var benchmark = new Canvas(Console.OpenStandardOutput()).Watch(logo, title, progress, iteration).Flush();
 
         int iterations = 0;
         var sw = Stopwatch.StartNew();
@@ -35,13 +35,9 @@ public static class Examples
         sw.Stop();
 
         Console.Clear();
-        Scene results = new(Console.OpenStandardOutput());
 
-        var score = new Label("");
-        results.Manage(score);
-
-        score.Text.Value = $"Rendered {iterations} times in {sw.Elapsed.TotalSeconds} sec.";
-        results.Flush();
+        var score = new Label($"Rendered {iterations} times in {sw.Elapsed.TotalSeconds} sec.");
+        var result = new Canvas(Console.OpenStandardOutput()).Watch(score).Flush();
 
         Console.ReadKey();
     }
