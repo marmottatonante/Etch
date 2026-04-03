@@ -1,4 +1,6 @@
-﻿using Keystone.Geometry;
+﻿using Etch.UI;
+using Keystone.Geometry;
+using Keystone.Reactivity;
 using System.Buffers;
 using System.Text;
 
@@ -9,6 +11,9 @@ public sealed class Canvas(Stream output)
     private readonly Stream _output = output;
 
     public ArrayBufferWriter<byte> Buffer { get; } = new();
+    public Property<Int2> Size { get; } = new((Console.WindowWidth, Console.WindowHeight));
+
+    // ANSI writing
 
     public Canvas Clear() { Buffer.Write("\x1b[2J"u8); return this; }
     public Canvas Reset() { Buffer.Write("\x1b[0m"u8); return this; }
@@ -58,23 +63,25 @@ public sealed class Canvas(Stream output)
         return this;
     }
 
+    // Reactive rendering
+
     public Canvas Watch(IRenderable renderable)
     {
         renderable.Position.Changing += () => renderable.Clear(this);
         renderable.Position.Changed += () => renderable.Render(this);
         renderable.Size.Changing += () => renderable.Clear(this);
         renderable.Content.Changed += () => renderable.Render(this);
-
         renderable.Render(this);
         return this;
     }
+
     public Canvas Watch(params IRenderable[] renderables)
     {
-        foreach(IRenderable renderable in renderables)
-            Watch(renderable);
-
+        foreach (var renderable in renderables) Watch(renderable);
         return this;
     }
+
+    // Flushing
 
     public Canvas Flush()
     {

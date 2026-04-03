@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Etch.UI;
 
 namespace Etch.Demo;
 
@@ -15,13 +16,13 @@ public static class Examples
 
     public static void Benchmark()
     {
-
         var logo = new Image(Figlet.Split('\n'));
-        var title = new Label("Benchmarking").BottomOf(logo, 1, Extensions.Alignment.Center);
-        var progress = new Progress(0, 10).BottomOf(title, 0, Extensions.Alignment.Center);
-        var iteration = new Label("Waiting").BottomOf(progress, 1, Extensions.Alignment.Center);
-        
-        var benchmark = new Canvas(Console.OpenStandardOutput()).Watch(logo, title, progress, iteration).Flush();
+        var title = new Label("Benchmarking");
+        var progress = new Progress(0, 10);
+        var iteration = new Label("");
+
+        var benchmark = new Canvas(Console.OpenStandardOutput())
+            .Watch(logo, title, progress, iteration).Flush();
 
         int iterations = 0;
         var sw = Stopwatch.StartNew();

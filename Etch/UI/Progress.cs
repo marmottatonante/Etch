@@ -1,20 +1,18 @@
 ﻿using Keystone.Geometry;
 using Keystone.Reactivity;
 
-namespace Etch;
+namespace Etch.UI;
 
-public sealed class Progress : IRenderable, ILayoutable
+public sealed class Progress : Widget
 {
     public double Minimum { get; }
     public double Maximum { get; }
     public Property<double> Current { get; }
     public Property<int> Percentage { get; }
-    public IWatchable Content => Percentage;
 
-    public Property<Int2> Position { get; }
-    public IReadOnlyProperty<Int2> Size { get; }
-    IWatchable IRenderable.Position => Position;
-    IWatchable IRenderable.Size => Size;
+    public override Property<Int2> Position { get; }
+    public override IReadOnlyProperty<Int2> Size { get; }
+    public override IWatchable Content => Percentage;
 
     public Progress(double minimum, double maximum)
     {
@@ -30,8 +28,6 @@ public sealed class Progress : IRenderable, ILayoutable
     private int ComputePercentage() => 
         (int)((Current.Value - Minimum) / (Maximum - Minimum) * 100);
 
-    public void Render(Canvas canvas) =>
+    public override void Render(Canvas canvas) =>
         canvas.Move(Position.Value).Write($"{Percentage.Value:000}%");
-    public void Clear(Canvas canvas) =>
-        canvas.Move(Position.Value).Blank(Size.Value.X);
 }

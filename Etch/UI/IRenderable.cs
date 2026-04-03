@@ -1,6 +1,6 @@
 ﻿using Keystone.Reactivity;
 
-namespace Etch;
+namespace Etch.UI;
 
 public interface IRenderable
 {

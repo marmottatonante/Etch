@@ -1,17 +1,15 @@
 ﻿using Keystone.Geometry;
 using Keystone.Reactivity;
 
-namespace Etch;
+namespace Etch.UI;
 
-public sealed class Image : IRenderable, ILayoutable
+public sealed class Image : Widget
 {
     public Property<string[]> Lines { get; }
-    public IWatchable Content => Lines;
 
-    public Property<Int2> Position { get; }
-    public IReadOnlyProperty<Int2> Size { get; }
-    IWatchable IRenderable.Position => Position;
-    IWatchable IRenderable.Size => Size;
+    public override Property<Int2> Position { get; }
+    public override IReadOnlyProperty<Int2> Size { get; }
+    public override IWatchable Content => Lines;
 
     public Image(string[] lines)
     {
@@ -24,14 +22,9 @@ public sealed class Image : IRenderable, ILayoutable
     private Int2 ComputeSize() => Lines.Value.Length == 0 ? Int2.Zero
         : (Lines.Value.Max(l => l.Length), Lines.Value.Length);
 
-    public void Render(Canvas canvas)
+    public override void Render(Canvas canvas)
     {
         for (int i = 0; i < Size.Value.Y; i++)
             canvas.Move((Position.Value.X, Position.Value.Y + i)).Write(Lines.Value[i]);
-    }
-    public void Clear(Canvas canvas)
-    {
-        for (int i = 0; i < Size.Value.Y; i++)
-            canvas.Move((Position.Value.X, Position.Value.Y + i)).Blank(Size.Value.X);
     }
 }
