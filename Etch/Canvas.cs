@@ -13,6 +13,8 @@ public sealed class Canvas(Stream output)
     public ArrayBufferWriter<byte> Buffer { get; } = new();
     public Property<Int2> Size { get; } = new((Console.WindowWidth, Console.WindowHeight));
 
+    public static Canvas FromTerminal() => new(Console.OpenStandardOutput());
+
     // ANSI writing
 
     public Canvas Clear() { Buffer.Write("\x1b[2J"u8); return this; }
