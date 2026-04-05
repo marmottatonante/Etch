@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Etch.UI;
+using Keystone;
 
 namespace Etch.Demo;
 
@@ -16,30 +17,34 @@ public static class Examples
 
     public static void Benchmark()
     {
+        var stopwatch = new Stopwatch();
+        int iterations = 0;
+
         var logo = new Image(Figlet.Split('\n'));
         var title = new Label("Benchmarking");
         var progress = new Progress(0, 10);
         var iteration = new Label("");
 
-        var benchmark = Canvas.Terminal.Watch(logo, title, progress, iteration)
-            .Enqueue(logo, title, progress, iteration).Render();
-
-        int iterations = 0;
-        var sw = Stopwatch.StartNew();
-        while (sw.Elapsed.TotalSeconds < 10)
+        using (Canvas.Terminal.Watch(logo, title, progress, iteration))
         {
-            progress.Current.Value = sw.Elapsed.TotalSeconds;
-            iteration.Text.Value = iterations.ToString();
-            benchmark.Render();
-            iterations++;
+            Canvas.Terminal.Render();
+
+            stopwatch.Start();
+            while (stopwatch.Elapsed.TotalSeconds < 10)
+            {
+                progress.Current.Value = stopwatch.Elapsed.TotalSeconds;
+                iteration.Text.Value = iterations.ToString();
+                Canvas.Terminal.Render();
+                iterations++;
+            }
+            stopwatch.Stop();
         }
-        sw.Stop();
 
-        Console.Clear();
-
-        var score = new Label($"Rendered {iterations} times in {sw.Elapsed.TotalSeconds} sec.");
-        Canvas.Terminal.Enqueue(score).Render();
+        var score = new Label($"Rendered {iterations} times in {stopwatch.Elapsed.TotalSeconds} sec.");
+        using (Canvas.Terminal.Watch(score))
+            Canvas.Terminal.Render();
 
         Console.ReadKey();
+        Canvas.Terminal.Render();
     }
 }

@@ -1,6 +1,5 @@
 ﻿using Etch.Drawing;
-using Keystone.Geometry;
-using Keystone.Reactivity;
+using Keystone;
 
 namespace Etch.UI;
 
@@ -26,7 +25,7 @@ public sealed class Progress : IDrawable
         Size = new Property<Int2>((4, 1));
     }
 
-    private int ComputePercentage() => 
-        (int)((Current.Value - Minimum) / (Maximum - Minimum) * 100);
+    private int ComputePercentage() =>
+        Math.Min(100, Math.Max(0, (int)((Current.Value - Minimum) / (Maximum - Minimum) * 100)));
     public ICommand[] GetCommands() => [new Blit(Position.Value, $"{Percentage.Value:000}%")];
 }

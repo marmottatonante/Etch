@@ -1,6 +1,5 @@
 ﻿using Etch.Drawing;
-using Keystone.Geometry;
-using Keystone.Reactivity;
+using Keystone;
 using System.Buffers;
 
 namespace Etch;
@@ -30,30 +29,29 @@ public sealed class Canvas(Stream output, Int2 size)
             _undrawQueue.Add(command);
     }
 
-    public Canvas Enqueue(IDrawable drawable)
+    public Cleanup Watch(IDrawable drawable)
     {
+        void onChanging() => EnqueueForUndraw(drawable);
+        void onChanged() => EnqueueForDraw(drawable);
+
         EnqueueForDraw(drawable);
-        return this;
+        drawable.Position.Changing += onChanging;
+        drawable.Position.Changed += onChanged;
+        drawable.Size.Changing += onChanging;
+        drawable.Size.Changed += onChanged;
+        drawable.Content.Changed += onChanged;
+
+        return new(() => {
+            EnqueueForUndraw(drawable);
+            drawable.Position.Changing -= onChanging;
+            drawable.Position.Changed -= onChanged;
+            drawable.Size.Changing -= onChanging;
+            drawable.Size.Changed -= onChanged;
+            drawable.Content.Changed -= onChanged;
+        });
     }
-    public Canvas Enqueue(params IDrawable[] drawables)
-    {
-        foreach (var drawable in drawables) EnqueueForDraw(drawable);
-        return this;
-    }
-    public Canvas Watch(IDrawable drawable)
-    {
-        drawable.Position.Changing += () => EnqueueForUndraw(drawable);
-        drawable.Position.Changed += () => EnqueueForDraw(drawable);
-        drawable.Size.Changing += () => EnqueueForUndraw(drawable);
-        drawable.Size.Changed += () => EnqueueForDraw(drawable);
-        drawable.Content.Changed += () => EnqueueForDraw(drawable);
-        return this;
-    }
-    public Canvas Watch(params IDrawable[] drawables)
-    {
-        foreach (var drawable in drawables) Watch(drawable);
-        return this;
-    }
+    public Cleanup Watch(params IDrawable[] drawable) =>
+        Cleanup.Merge(drawable.Select(Watch).ToArray());
 
     public Canvas Render()
     {
