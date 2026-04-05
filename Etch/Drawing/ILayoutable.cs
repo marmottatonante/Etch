@@ -1,7 +1,7 @@
 ﻿using Keystone.Geometry;
 using Keystone.Reactivity;
 
-namespace Etch.UI;
+namespace Etch.Drawing;
 
 public interface ILayoutable
 {

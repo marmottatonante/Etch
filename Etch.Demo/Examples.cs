@@ -21,7 +21,8 @@ public static class Examples
         var progress = new Progress(0, 10);
         var iteration = new Label("");
 
-        var benchmark = Canvas.FromTerminal().Watch(logo, title, progress, iteration).Flush();
+        var benchmark = Canvas.Terminal.Watch(logo, title, progress, iteration)
+            .Enqueue(logo, title, progress, iteration).Render();
 
         int iterations = 0;
         var sw = Stopwatch.StartNew();
@@ -29,7 +30,7 @@ public static class Examples
         {
             progress.Current.Value = sw.Elapsed.TotalSeconds;
             iteration.Text.Value = iterations.ToString();
-            benchmark.Flush();
+            benchmark.Render();
             iterations++;
         }
         sw.Stop();
@@ -37,7 +38,7 @@ public static class Examples
         Console.Clear();
 
         var score = new Label($"Rendered {iterations} times in {sw.Elapsed.TotalSeconds} sec.");
-        Canvas.FromTerminal().Watch(score).Flush();
+        Canvas.Terminal.Enqueue(score).Render();
 
         Console.ReadKey();
     }

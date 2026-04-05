@@ -1,93 +1,72 @@
-﻿using Etch.UI;
+﻿using Etch.Drawing;
 using Keystone.Geometry;
 using Keystone.Reactivity;
 using System.Buffers;
-using System.Text;
 
 namespace Etch;
 
-public sealed class Canvas(Stream output)
+public sealed class Canvas(Stream output, Int2 size)
 {
     private readonly Stream _output = output;
 
+    private readonly HashSet<ICommand> _drawQueue = [];
+    private readonly HashSet<ICommand> _undrawQueue = [];
+
     public ArrayBufferWriter<byte> Buffer { get; } = new();
-    public Property<Int2> Size { get; } = new((Console.WindowWidth, Console.WindowHeight));
+    public Property<Int2> Size { get; } = new(size);
 
-    public static Canvas FromTerminal() => new(Console.OpenStandardOutput());
+    public static Canvas Terminal { get; } = 
+        new(Console.OpenStandardOutput(), 
+            (Console.WindowWidth, Console.WindowHeight));
 
-    // ANSI writing
-
-    public Canvas Clear() { Buffer.Write("\x1b[2J"u8); return this; }
-    public Canvas Reset() { Buffer.Write("\x1b[0m"u8); return this; }
-
-    private Canvas Color(ReadOnlySpan<byte> prefix, Color color)
+    private void EnqueueForDraw(IDrawable drawable)
     {
-        byte bColor = (byte)color;
-        var span = Buffer.GetSpan(11);
-        int written = 0;
-        prefix.CopyTo(span[written..]); written += prefix.Length;
-        bColor.TryFormat(span[written..], out int fw, default, null); written += fw;
-        span[written++] = (byte)'m';
-        Buffer.Advance(written);
+        foreach (var command in drawable.GetCommands())
+            _drawQueue.Add(command);
+    }
+    private void EnqueueForUndraw(IDrawable drawable)
+    {
+        foreach (var command in drawable.GetCommands())
+            _undrawQueue.Add(command);
+    }
+
+    public Canvas Enqueue(IDrawable drawable)
+    {
+        EnqueueForDraw(drawable);
+        return this;
+    }
+    public Canvas Enqueue(params IDrawable[] drawables)
+    {
+        foreach (var drawable in drawables) EnqueueForDraw(drawable);
+        return this;
+    }
+    public Canvas Watch(IDrawable drawable)
+    {
+        drawable.Position.Changing += () => EnqueueForUndraw(drawable);
+        drawable.Position.Changed += () => EnqueueForDraw(drawable);
+        drawable.Size.Changing += () => EnqueueForUndraw(drawable);
+        drawable.Size.Changed += () => EnqueueForDraw(drawable);
+        drawable.Content.Changed += () => EnqueueForDraw(drawable);
+        return this;
+    }
+    public Canvas Watch(params IDrawable[] drawables)
+    {
+        foreach (var drawable in drawables) Watch(drawable);
         return this;
     }
 
-    public Canvas Foreground(Color color) => Color("\x1b[38;5;"u8, color);
-    public Canvas Background(Color color) => Color("\x1b[48;5;"u8, color);
-
-    public Canvas Move(Int2 position)
+    public Canvas Render()
     {
-        var span = Buffer.GetSpan(14);
-        int written = 0;
-        "\x1b["u8.CopyTo(span[written..]); written += 2;
-        (position.Y + 1).TryFormat(span[written..], out int rw, default, null); written += rw;
-        span[written++] = (byte)';';
-        (position.X + 1).TryFormat(span[written..], out int cw, default, null); written += cw;
-        span[written++] = (byte)'H';
-        Buffer.Advance(written);
-        return this;
-    }
+        if (_undrawQueue.Count == 0 && _drawQueue.Count == 0) return this;
 
-    public Canvas Write(byte b) { Buffer.GetSpan(1)[0] = b; Buffer.Advance(1); return this; }
-    public Canvas Write(ReadOnlySpan<char> text)
-    {
-        int bytes = Encoding.UTF8.GetMaxByteCount(text.Length);
-        var span = Buffer.GetSpan(bytes);
-        Buffer.Advance(Encoding.UTF8.GetBytes(text, span));
-        return this;
-    }
+        foreach (var command in _undrawQueue)
+            command.Undraw(Buffer);
 
-    public Canvas Blank(int count)
-    {
-        var span = Buffer.GetSpan(count);
-        span[..count].Fill((byte)' ');
-        Buffer.Advance(count);
-        return this;
-    }
+        foreach (var command in _drawQueue)
+            command.Draw(Buffer);
 
-    // Reactive rendering
-
-    public Canvas Watch(IRenderable renderable)
-    {
-        renderable.Position.Changing += () => renderable.Clear(this);
-        renderable.Position.Changed += () => renderable.Render(this);
-        renderable.Size.Changing += () => renderable.Clear(this);
-        renderable.Content.Changed += () => renderable.Render(this);
-        renderable.Render(this);
-        return this;
-    }
-
-    public Canvas Watch(params IRenderable[] renderables)
-    {
-        foreach (var renderable in renderables) Watch(renderable);
-        return this;
-    }
-
-    // Flushing
-
-    public Canvas Flush()
-    {
-        if (Buffer.WrittenCount == 0) return this;
+        _undrawQueue.Clear();
+        _drawQueue.Clear();
 
         _output.Write(Buffer.WrittenSpan);
         _output.Flush();
