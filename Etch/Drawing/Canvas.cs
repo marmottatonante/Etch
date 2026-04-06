@@ -9,14 +9,19 @@ public sealed class Canvas
     private readonly Stream _output;
     private readonly ArrayBufferWriter<byte> _buffer;
 
-    private readonly HashSet<IDrawable> _drawQueue;
-    private readonly HashSet<IDrawable> _clearQueue;
+    private readonly HashSet<IDrawable> _drawSet;
+    private readonly HashSet<IDrawable> _clearSet;
+    private readonly List<IDrawable> _drawQueue;
+    private readonly List<IDrawable> _clearQueue;
 
     public Property<Int2> Size { get; }
     public Anchors Anchors { get; }
 
+    public Context Context => new(_buffer);
+
     public Canvas(Stream output, Int2 size)
     {
+        _drawSet = []; _clearSet = [];
         _drawQueue = []; _clearQueue = [];
         _buffer = new ArrayBufferWriter<byte>();
 
@@ -25,12 +30,24 @@ public sealed class Canvas
         Anchors = new Anchors(Size);
     }
 
+    private void EnqueueForDraw(IDrawable drawable)
+    {
+        if (_drawSet.Add(drawable))
+            _drawQueue.Add(drawable);
+    }
+
+    private void EnqueueForClear(IDrawable drawable)
+    {
+        if (_clearSet.Add(drawable))
+            _clearQueue.Add(drawable);
+    }
+
     public Cleanup Watch(IDrawable drawable)
     {
-        void onChanging() => _clearQueue.Add(drawable);
-        void onChanged() => _drawQueue.Add(drawable);
+        void onChanging() => EnqueueForClear(drawable);
+        void onChanged() => EnqueueForDraw(drawable);
 
-        _drawQueue.Add(drawable);
+        EnqueueForDraw(drawable);
         drawable.Position.Changing += onChanging;
         drawable.Position.Changed += onChanged;
         drawable.Size.Changing += onChanging;
@@ -38,7 +55,7 @@ public sealed class Canvas
         drawable.Content.Changed += onChanged;
 
         return new(() => {
-            _clearQueue.Add(drawable);
+            EnqueueForClear(drawable);
             drawable.Position.Changing -= onChanging;
             drawable.Position.Changed -= onChanged;
             drawable.Size.Changing -= onChanging;
@@ -49,22 +66,23 @@ public sealed class Canvas
     public Cleanup Watch(params IDrawable[] drawable) =>
         Cleanup.Merge(drawable.Select(Watch).ToArray());
 
-    public Canvas Render()
+    public void Render()
     {
-        if (_drawQueue.Count == 0 && _clearQueue.Count == 0) return this;
+        if (_drawQueue.Count == 0 && _clearQueue.Count == 0) return;
 
         foreach(var drawable in _clearQueue)
-            drawable.Clear(new Context(_buffer));
+            drawable.Clear(Context);
         _clearQueue.Clear();
+        _clearSet.Clear();
 
         foreach (var drawable in _drawQueue)
-            drawable.Draw(new Context(_buffer));
+            drawable.Draw(Context);
         _drawQueue.Clear();
+        _drawSet.Clear();
 
         _output.Write(_buffer.WrittenSpan);
         _output.Flush();
 
         _buffer.Clear();
-        return this;
     }
 }

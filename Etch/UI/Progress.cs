@@ -30,7 +30,11 @@ public sealed class Progress : IDrawable
 
     public void Draw(Context context)
     {
+        Span<char> text = stackalloc char[4];
+        Percentage.Value.TryFormat(text, out _, "000");
+        text[3] = '%';
+
         context.Move(Position.Value);
-        context.Blit($"{Percentage.Value:000}%");
+        context.Blit(text);
     }
 }

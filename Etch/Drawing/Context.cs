@@ -42,9 +42,9 @@ public readonly ref struct Context(ArrayBufferWriter<byte> buffer)
         _buffer.Advance(written);
     }
 
-    public void Plot(byte glyph)
+    public void Plot(char glyph)
     {
-        _buffer.GetSpan(1)[0] = glyph;
+        _buffer.GetSpan(1)[0] = (byte)glyph;
         _buffer.Advance(1);
     }
 

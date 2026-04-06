@@ -21,7 +21,6 @@ public static class Examples
 
         int iterations = 0;
         var stopwatch = new Stopwatch();
-        var random = new Random();
 
         var logo = new Image(Figlet.Split('\n')).Anchor(terminal.Anchors.Center, Alignment.Center);
         var title = new Label("Benchmarking").Anchor(terminal.Anchors.Center, Alignment.Center);
@@ -35,9 +34,6 @@ public static class Examples
             stopwatch.Start();
             while (stopwatch.Elapsed.TotalSeconds < 10)
             {
-                //terminal.Size.Value = (random.Next(80, 120), random.Next(24, 40));
-                //terminal.DrawDebugBorder();
-
                 progress.Current.Value = stopwatch.Elapsed.TotalSeconds;
                 iteration.Text.Value = iterations.ToString();
                 terminal.Render();
