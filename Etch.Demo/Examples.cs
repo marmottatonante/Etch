@@ -15,6 +15,8 @@ public static class Examples
     .||.....|  '|.'  '|...' .||. ||.
     """;
 
+    public static readonly string[] Classic = ["|", "/", "-", "\\"];
+
     public static void Benchmark()
     {
         Canvas terminal = new(Console.OpenStandardOutput(), (Console.WindowWidth, Console.WindowHeight));
@@ -22,12 +24,12 @@ public static class Examples
         int iterations = 0;
         var stopwatch = new Stopwatch();
 
-        var logo = new Image(Figlet.Split('\n')).Anchor(terminal.Anchors.Center, Alignment.Center);
-        var title = new Label("Benchmarking").Anchor(terminal.Anchors.Center, Alignment.Center);
-        var progress = new Progress(0, 10).Anchor(terminal.Anchors.Center, Alignment.Center);
-        var iteration = new Label("").Anchor(terminal.Anchors.Center, Alignment.Center);
+        var logo = new Image(Figlet.Split('\n')).Anchor(terminal.Anchors.Center, Alignment.Center, (0, -2));
+        var title = new Label("Benchmarking").Anchor(terminal.Anchors.Center, Alignment.Center, (0, 2));
+        var progress = new Progress(0, 10).Anchor(terminal.Anchors.Center, Alignment.Center, (0, 3));
+        var animation = new Animation(Classic).Anchor(terminal.Anchors.Center, Alignment.Center, (0, 5));
 
-        using (terminal.Watch(logo, title, progress, iteration))
+        using (terminal.Watch(logo, title, progress, animation))
         {
             terminal.Render();
 
@@ -35,7 +37,7 @@ public static class Examples
             while (stopwatch.Elapsed.TotalSeconds < 10)
             {
                 progress.Current.Value = stopwatch.Elapsed.TotalSeconds;
-                iteration.Text.Value = iterations.ToString();
+                animation.Advance();
                 terminal.Render();
                 iterations++;
             }
