@@ -27,5 +27,5 @@ public sealed class Progress : IDrawable
 
     private int ComputePercentage() =>
         Math.Min(100, Math.Max(0, (int)((Current.Value - Minimum) / (Maximum - Minimum) * 100)));
-    public ICommand[] GetCommands() => [new Blit(Position.Value, $"{Percentage.Value:000}%")];
+    public Command[] GetCommands() => [Command.Blit(Position.Value, $"{Percentage.Value:000}%")];
 }

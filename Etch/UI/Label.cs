@@ -19,5 +19,5 @@ public sealed class Label : IDrawable
     }
 
     private Int2 ComputeSize() => (Text.Value.Length, 1);
-    public ICommand[] GetCommands() => [new Blit(Position.Value, Text.Value)];
+    public Command[] GetCommands() => [Command.Blit(Position.Value, Text.Value)];
 }

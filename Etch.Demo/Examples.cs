@@ -35,7 +35,9 @@ public static class Examples
             stopwatch.Start();
             while (stopwatch.Elapsed.TotalSeconds < 10)
             {
-                terminal.Size.Value = (random.Next(80, 220), random.Next(24, 60));
+                //terminal.Size.Value = (random.Next(80, 120), random.Next(24, 40));
+                //terminal.DrawDebugBorder();
+
                 progress.Current.Value = stopwatch.Elapsed.TotalSeconds;
                 iteration.Text.Value = iterations.ToString();
                 terminal.Render();
@@ -47,8 +49,5 @@ public static class Examples
         var score = new Label($"Rendered {iterations} times in {stopwatch.Elapsed.TotalSeconds} sec.");
         using (terminal.Watch(score))
             terminal.Render();
-
-        Console.ReadKey();
-        terminal.Render();
     }
 }
