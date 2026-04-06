@@ -20,11 +20,13 @@ public sealed class Image : IDrawable
 
     private Int2 ComputeSize() => Lines.Value.Length == 0 ? Int2.Zero
         : (Lines.Value.Max(l => l.Length), Lines.Value.Length);
-    public Command[] GetCommands()
+
+    public void Draw(Context context)
     {
-        var commands = new Command[Lines.Value.Length];
         for (int i = 0; i < Lines.Value.Length; i++)
-            commands[i] = Command.Blit((Position.Value.X, Position.Value.Y + i), Lines.Value[i]);
-        return commands;
+        {
+            context.Move((Position.Value.X, Position.Value.Y + i));
+            context.Blit(Lines.Value[i]);
+        }
     }
 }

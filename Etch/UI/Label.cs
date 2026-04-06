@@ -19,5 +19,9 @@ public sealed class Label : IDrawable
     }
 
     private Int2 ComputeSize() => (Text.Value.Length, 1);
-    public Command[] GetCommands() => [Command.Blit(Position.Value, Text.Value)];
+    public void Draw(Context context)
+    {
+        context.Move(Position.Value);
+        context.Blit(Text.Value);
+    }
 }
