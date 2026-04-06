@@ -6,17 +6,24 @@ namespace Etch;
 
 public sealed class Canvas(Stream output, Int2 size)
 {
-    private readonly Stream _output = output;
+    private readonly Stream _output;
+    private readonly ArrayBufferWriter<byte> _buffer;
 
-    private readonly HashSet<ICommand> _drawQueue = [];
-    private readonly HashSet<ICommand> _undrawQueue = [];
+    private readonly HashSet<ICommand> _drawQueue;
+    private readonly HashSet<ICommand> _undrawQueue;
 
-    public ArrayBufferWriter<byte> Buffer { get; } = new();
-    public Property<Int2> Size { get; } = new(size);
+    public Property<Int2> Size { get; }
+    public Anchors Anchors { get; }
 
-    public static Canvas Terminal { get; } = 
-        new(Console.OpenStandardOutput(), 
-            (Console.WindowWidth, Console.WindowHeight));
+    public Canvas(Stream output, Int2 size)
+    {
+        _drawQueue = []; _undrawQueue = [];
+        _buffer = new ArrayBufferWriter<byte>();
+
+        _output = output;
+        Size = new Property<Int2>(size);
+        Anchors = new Anchors(Size);
+    }
 
     private void EnqueueForDraw(IDrawable drawable)
     {
@@ -58,18 +65,18 @@ public sealed class Canvas(Stream output, Int2 size)
         if (_undrawQueue.Count == 0 && _drawQueue.Count == 0) return this;
 
         foreach (var command in _undrawQueue)
-            command.Undraw(Buffer);
+            command.Undraw(_buffer);
 
         foreach (var command in _drawQueue)
-            command.Draw(Buffer);
+            command.Draw(_buffer);
 
         _undrawQueue.Clear();
         _drawQueue.Clear();
 
-        _output.Write(Buffer.WrittenSpan);
+        _output.Write(_buffer.WrittenSpan);
         _output.Flush();
 
-        Buffer.Clear();
+        _buffer.Clear();
         return this;
     }
 }
