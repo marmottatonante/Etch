@@ -1,10 +1,9 @@
-﻿using Etch.Drawing;
-using Keystone;
+﻿using Keystone;
 using System.Buffers;
 
-namespace Etch;
+namespace Etch.Drawing;
 
-public sealed class Canvas(Stream output, Int2 size)
+public partial class Canvas
 {
     private readonly Stream _output;
     private readonly ArrayBufferWriter<byte> _buffer;

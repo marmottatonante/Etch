@@ -35,6 +35,7 @@ public static class Examples
             stopwatch.Start();
             while (stopwatch.Elapsed.TotalSeconds < 10)
             {
+                terminal.Size.Value = (random.Next(80, 220), random.Next(24, 60));
                 progress.Current.Value = stopwatch.Elapsed.TotalSeconds;
                 iteration.Text.Value = iterations.ToString();
                 terminal.Render();
