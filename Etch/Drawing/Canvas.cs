@@ -34,10 +34,12 @@ public sealed class Canvas
         for (int y = 0; y < drawable.Size.Value.Y; y++)
         {
             Int2 movePos = (drawable.Position.Value.X, drawable.Position.Value.Y + y);
-            var moveHandle = _artifacts.Write(movePos);
+            var moveHandle = _artifacts.Allocate<Int2>(1);
+            _artifacts.Write(moveHandle, movePos);
             _commands.Add(new Command(Command.Type.Move, moveHandle));
 
-            var blankHandle = _artifacts.Write(blankCount);
+            var blankHandle = _artifacts.Allocate<int>(1);
+            _artifacts.Write(blankHandle, blankCount);
             _commands.Add(new Command(Command.Type.Blank, blankHandle));
         }
     }
