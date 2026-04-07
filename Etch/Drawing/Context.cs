@@ -25,7 +25,8 @@ public readonly ref struct Context(Arena<byte> artifacts, List<Command> commands
         var handle = artifacts.Allocate(maxBytes);
         var span = artifacts.GetSpan(handle);
         int written = Encoding.UTF8.GetBytes(text, span);
-        commands.Add(new Command(Command.Type.Blit, handle.Trim(written)));
+        var newHandle = artifacts.Reallocate(handle, written);
+        commands.Add(new Command(Command.Type.Blit, newHandle));
     }
 
     public void Blank(int count)
