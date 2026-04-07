@@ -1,64 +1,31 @@
 ﻿using Keystone;
-using System.Buffers;
 using System.Text;
 
 namespace Etch.Drawing;
 
-public readonly ref struct Context(ArrayBufferWriter<byte> buffer)
+public readonly ref struct Context(Arena<byte> artifacts, List<Command> commands)
 {
-    private readonly ArrayBufferWriter<byte> _buffer = buffer;
+    public void Move(Int2 position) =>
+        commands.Add(new Command(Command.Type.Move, artifacts.Write(position)));
 
-    public void Move(Int2 position)
-    {
-        var span = _buffer.GetSpan(14);
-        int written = 0;
-        "\x1b["u8.CopyTo(span[written..]); written += 2;
-        (position.Y + 1).TryFormat(span[written..], out int rw, default); written += rw;
-        span[written++] = (byte)';';
-        (position.X + 1).TryFormat(span[written..], out int cw, default); written += cw;
-        span[written++] = (byte)'H';
-        _buffer.Advance(written);
-    }
-
-    public void Foreground(Color color)
-    {
-        byte bColor = (byte)color;
-        var span = _buffer.GetSpan(11);
-        int written = 0;
-        "\x1b[38;5;"u8.CopyTo(span[written..]); written += 7;
-        bColor.TryFormat(span[written..], out int fw, default); written += fw;
-        span[written++] = (byte)'m';
-        _buffer.Advance(written);
-    }
-
-    public void Background(Color color)
-    {
-        byte bColor = (byte)color;
-        var span = _buffer.GetSpan(11);
-        int written = 0;
-        "\x1b[48;5;"u8.CopyTo(span[written..]); written += 7;
-        bColor.TryFormat(span[written..], out int fw, default); written += fw;
-        span[written++] = (byte)'m';
-        _buffer.Advance(written);
-    }
-
-    public void Plot(char glyph)
-    {
-        _buffer.GetSpan(1)[0] = (byte)glyph;
-        _buffer.Advance(1);
-    }
+    public void Plot(byte glyph) => 
+        commands.Add(new Command(Command.Type.Plot, artifacts.Write(glyph)));
 
     public void Blit(ReadOnlySpan<char> text)
     {
-        int bytes = Encoding.UTF8.GetMaxByteCount(text.Length);
-        var span = _buffer.GetSpan(bytes);
-        _buffer.Advance(Encoding.UTF8.GetBytes(text, span));
+        int byteCount = Encoding.UTF8.GetByteCount(text);
+        Span<byte> utf8Buffer = stackalloc byte[512];
+        int written = Encoding.UTF8.GetBytes(text, utf8Buffer);
+        var handle = artifacts.Write(utf8Buffer[..written]);
+        commands.Add(new Command(Command.Type.Blit, handle));
     }
 
-    public void Blank(int count)
-    {
-        var span = _buffer.GetSpan(count);
-        span[..count].Fill((byte)' ');
-        _buffer.Advance(count);
-    }
+    public void Blank(int count) =>
+        commands.Add(new Command(Command.Type.Blank, artifacts.Write(count)));
+
+    public void Foreground(Color color) => 
+        commands.Add(new Command(Command.Type.Foreground, artifacts.Write(color)));
+
+    public void Background(Color color) =>
+        commands.Add(new Command(Command.Type.Background, artifacts.Write(color)));
 }

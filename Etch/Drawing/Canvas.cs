@@ -1,6 +1,5 @@
 ﻿using Keystone;
 using System.Buffers;
-using System.Text;
 
 namespace Etch.Drawing;
 
@@ -9,20 +8,16 @@ public sealed class Canvas
     private readonly Stream _output;
     private readonly ArrayBufferWriter<byte> _buffer;
 
-    private readonly HashSet<IDrawable> _drawSet;
-    private readonly HashSet<IDrawable> _clearSet;
-    private readonly List<IDrawable> _drawQueue;
-    private readonly List<IDrawable> _clearQueue;
+    private readonly Arena<byte> _artifacts;
+    private readonly List<Command> _commands;
 
     public Property<Int2> Size { get; }
     public Anchors Anchors { get; }
 
-    public Context Context => new(_buffer);
-
     public Canvas(Stream output, Int2 size)
     {
-        _drawSet = []; _clearSet = [];
-        _drawQueue = []; _clearQueue = [];
+        _artifacts = new Arena<byte>();
+        _commands = new List<Command>();
         _buffer = new ArrayBufferWriter<byte>();
 
         _output = output;
@@ -30,16 +25,21 @@ public sealed class Canvas
         Anchors = new Anchors(Size);
     }
 
-    private void EnqueueForDraw(IDrawable drawable)
-    {
-        if (_drawSet.Add(drawable))
-            _drawQueue.Add(drawable);
-    }
+    private void EnqueueForDraw(IDrawable drawable) =>
+        drawable.Draw(new Context(_artifacts, _commands));
 
     private void EnqueueForClear(IDrawable drawable)
     {
-        if (_clearSet.Add(drawable))
-            _clearQueue.Add(drawable);
+        int blankCount = drawable.Size.Value.X;
+        for (int y = 0; y < drawable.Size.Value.Y; y++)
+        {
+            Int2 movePos = (drawable.Position.Value.X, drawable.Position.Value.Y + y);
+            var moveHandle = _artifacts.Write(movePos);
+            _commands.Add(new Command(Command.Type.Move, moveHandle));
+
+            var blankHandle = _artifacts.Write(blankCount);
+            _commands.Add(new Command(Command.Type.Blank, blankHandle));
+        }
     }
 
     public Cleanup Watch(IDrawable drawable)
@@ -68,17 +68,12 @@ public sealed class Canvas
 
     public void Render()
     {
-        if (_drawQueue.Count == 0 && _clearQueue.Count == 0) return;
+        if (_commands.Count == 0) return;
 
-        foreach(var drawable in _clearQueue)
-            drawable.Clear(Context);
-        _clearQueue.Clear();
-        _clearSet.Clear();
-
-        foreach (var drawable in _drawQueue)
-            drawable.Draw(Context);
-        _drawQueue.Clear();
-        _drawSet.Clear();
+        foreach (var command in _commands)
+            command.Execute(_buffer, _artifacts);
+        _commands.Clear();
+        _artifacts.Reset();
 
         _output.Write(_buffer.WrittenSpan);
         _output.Flush();

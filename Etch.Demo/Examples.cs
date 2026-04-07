@@ -25,8 +25,9 @@ public static class Examples
         var logo = new Image(Figlet.Split('\n')).Anchor(terminal.Anchors.Center, Alignment.Center, (0, -2));
         var title = new Label("Benchmarking").Anchor(terminal.Anchors.Center, Alignment.Center, (0, 2));
         var progress = new Progress(0, 10).Anchor(terminal.Anchors.Center, Alignment.Center, (0, 3));
+        var counter = new Label("").Anchor(terminal.Anchors.Center, Alignment.Center, (0, 3));
 
-        using (terminal.Watch(logo, title, progress))
+        using (terminal.Watch(logo, title, progress, counter))
         {
             terminal.Render();
 
@@ -34,6 +35,7 @@ public static class Examples
             while (stopwatch.Elapsed.TotalSeconds < 10)
             {
                 progress.Current.Value = stopwatch.Elapsed.TotalSeconds;
+                counter.Text.Value = iterations.ToString();
                 terminal.Render();
                 iterations++;
             }
