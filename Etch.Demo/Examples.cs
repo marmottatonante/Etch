@@ -15,8 +15,6 @@ public static class Examples
     .||.....|  '|.'  '|...' .||. ||.
     """;
 
-    public static readonly string[] Classic = ["|", "/", "-", "\\"];
-
     public static void Benchmark()
     {
         Canvas terminal = new(Console.OpenStandardOutput(), (Console.WindowWidth, Console.WindowHeight));
@@ -27,9 +25,8 @@ public static class Examples
         var logo = new Image(Figlet.Split('\n')).Anchor(terminal.Anchors.Center, Alignment.Center, (0, -2));
         var title = new Label("Benchmarking").Anchor(terminal.Anchors.Center, Alignment.Center, (0, 2));
         var progress = new Progress(0, 10).Anchor(terminal.Anchors.Center, Alignment.Center, (0, 3));
-        var animation = new Animation(Classic).Anchor(terminal.Anchors.Center, Alignment.Center, (0, 5));
 
-        using (terminal.Watch(logo, title, progress, animation))
+        using (terminal.Watch(logo, title, progress))
         {
             terminal.Render();
 
@@ -37,7 +34,6 @@ public static class Examples
             while (stopwatch.Elapsed.TotalSeconds < 10)
             {
                 progress.Current.Value = stopwatch.Elapsed.TotalSeconds;
-                animation.Advance();
                 terminal.Render();
                 iterations++;
             }
