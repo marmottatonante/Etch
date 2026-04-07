@@ -1,3 +1,5 @@
-﻿using Etch.Demo;
+﻿using Etch;
+using Etch.Demo;
 
+Platform.ConsoleHost.EnableAnsi();
 Examples.Benchmark();
