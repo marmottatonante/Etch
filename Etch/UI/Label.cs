@@ -14,8 +14,11 @@ public sealed class Label : IDrawable
     public Label(string initial)
     {
         Text = new(initial);
-        Position = new(Int2.Zero);
-        Size = new Property<Int2>(ComputeSize, Text);
+        Position = new Property<Int2>(Int2.Zero);
+
+        var size = new Property<Int2>(default);
+        size.Bind(ComputeSize, Text);
+        Size = size;
     }
 
     private Int2 ComputeSize() => (Text.Value.Length, 1);

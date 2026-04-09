@@ -15,28 +15,44 @@ public sealed class Anchors
     public IReadOnlyProperty<Int2> BottomRight { get; }
 
     public Anchors(IReadOnlyProperty<Int2> size)
-    {
-        TopLeft = new Property<Int2>(() => Int2.Zero, size);
-        TopCenter = new Property<Int2>(() => (size.Value.X / 2, 0), size);
-        TopRight = new Property<Int2>(() => (size.Value.X, 0), size);
-        MiddleLeft = new Property<Int2>(() => (0, size.Value.Y / 2), size);
-        Center = new Property<Int2>(() => (size.Value.X / 2, size.Value.Y / 2), size);
-        MiddleRight = new Property<Int2>(() => (size.Value.X, size.Value.Y / 2), size);
-        BottomLeft = new Property<Int2>(() => (0, size.Value.Y), size);
-        BottomCenter = new Property<Int2>(() => (size.Value.X / 2, size.Value.Y), size);
-        BottomRight = new Property<Int2>(() => size.Value, size);
-    }
+        : this(new Property<Int2>(Int2.Zero), size) { }
 
     public Anchors(IReadOnlyProperty<Int2> position, IReadOnlyProperty<Int2> size)
     {
-        TopLeft = new Property<Int2>(() => position.Value, position, size);
-        TopCenter = new Property<Int2>(() => position.Value + (size.Value.X / 2, 0), position, size);
-        TopRight = new Property<Int2>(() => position.Value + (size.Value.X, 0), position, size);
-        MiddleLeft = new Property<Int2>(() => position.Value + (0, size.Value.Y / 2), position, size);
-        Center = new Property<Int2>(() => position.Value + (size.Value.X / 2, size.Value.Y / 2), position, size);
-        MiddleRight = new Property<Int2>(() => position.Value + (size.Value.X, size.Value.Y / 2), position, size);
-        BottomLeft = new Property<Int2>(() => position.Value + (0, size.Value.Y), position, size);
-        BottomCenter = new Property<Int2>(() => position.Value + (size.Value.X / 2, size.Value.Y), position, size);
-        BottomRight = new Property<Int2>(() => position.Value + size.Value, position, size);
+        var topLeft = new Property<Int2>(Int2.Zero);
+        topLeft.Bind(() => position.Value, position);
+        TopLeft = topLeft;
+
+        var topCenter = new Property<Int2>(Int2.Zero);
+        topCenter.Bind(() => position.Value + (size.Value.X / 2, 0), position, size);
+        TopCenter = topCenter;
+
+        var topRight = new Property<Int2>(Int2.Zero);
+        topRight.Bind(() => position.Value + (size.Value.X, 0), position, size);
+        TopRight = topRight;
+
+        var middleLeft = new Property<Int2>(Int2.Zero);
+        middleLeft.Bind(() => position.Value + (0, size.Value.Y / 2), position, size);
+        MiddleLeft = middleLeft;
+
+        var center = new Property<Int2>(Int2.Zero);
+        center.Bind(() => position.Value + (size.Value.X / 2, size.Value.Y / 2), position, size);
+        Center = center;
+
+        var middleRight = new Property<Int2>(Int2.Zero);
+        middleRight.Bind(() => position.Value + (size.Value.X, size.Value.Y / 2), position, size);
+        MiddleRight = middleRight;
+
+        var bottomLeft = new Property<Int2>(Int2.Zero);
+        bottomLeft.Bind(() => position.Value + (0, size.Value.Y), position, size);
+        BottomLeft = bottomLeft;
+
+        var bottomCenter = new Property<Int2>(Int2.Zero);
+        bottomCenter.Bind(() => position.Value + (size.Value.X / 2, size.Value.Y), position, size);
+        BottomCenter = bottomCenter;
+
+        var bottomRight = new Property<Int2>(Int2.Zero);
+        bottomRight.Bind(() => position.Value + size.Value, position, size);
+        BottomRight = bottomRight;
     }
 }

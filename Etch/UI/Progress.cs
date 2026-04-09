@@ -8,7 +8,7 @@ public sealed class Progress : IDrawable
     public double Minimum { get; }
     public double Maximum { get; }
     public Property<double> Current { get; }
-    public Property<int> Percentage { get; }
+    public IReadOnlyProperty<int> Percentage { get; }
 
     public Property<Int2> Position { get; }
     public IReadOnlyProperty<Int2> Size { get; }
@@ -18,11 +18,14 @@ public sealed class Progress : IDrawable
     {
         Minimum = minimum;
         Maximum = maximum;
-        Current = new(minimum);
-        Percentage = new(ComputePercentage, Current);
 
-        Position = new(Int2.Zero);
+        Position = new Property<Int2>(Int2.Zero);
         Size = new Property<Int2>((4, 1));
+
+        Current = new(minimum);
+        var percentage = new Property<int>(default);
+        percentage.Bind(ComputePercentage, Current);
+        Percentage = percentage;
     }
 
     private int ComputePercentage() =>

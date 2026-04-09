@@ -16,7 +16,7 @@ public sealed class Animation : IDrawable
     {
         _frames = frames;
         Frame = new(0);
-        Position = new(Int2.Zero);
+        Position = new Property<Int2>(Int2.Zero);
         Size = new Property<Int2>(ComputeSize());
     }
 

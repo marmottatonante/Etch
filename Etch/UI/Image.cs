@@ -14,8 +14,11 @@ public sealed class Image : IDrawable
     public Image(string[] lines)
     {
         Lines = new(lines);
-        Position = new(Int2.Zero);
-        Size = new Property<Int2>(ComputeSize, Lines);
+        Position = new Property<Int2>(Int2.Zero);
+
+        var size = new Property<Int2>(Int2.Zero);
+        size.Bind(ComputeSize, Lines);
+        Size = size;
     }
 
     private Int2 ComputeSize() => Lines.Value.Length == 0 ? Int2.Zero
