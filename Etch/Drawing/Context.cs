@@ -1,5 +1,6 @@
 ﻿using Keystone;
 using System.Buffers;
+using System.Text;
 
 namespace Etch.Drawing;
 
@@ -54,10 +55,10 @@ public readonly ref struct Context(ArrayBufferWriter<byte> buffer)
 
     public void Blit(ReadOnlySpan<char> text)
     {
-        var span = buffer.GetSpan(text.Length);
-        for (int i = 0; i < text.Length; i++)
-            span[i] = (byte)text[i];
-        buffer.Advance(text.Length);
+        int maxBytes = Encoding.UTF8.GetMaxByteCount(text.Length);
+        var span = buffer.GetSpan(maxBytes);
+        int written = Encoding.UTF8.GetBytes(text, span);
+        buffer.Advance(written);
     }
 
     public void Blank(int count)
