@@ -8,16 +8,11 @@ public sealed class Canvas
     private readonly Stream _output;
     private readonly ArrayBufferWriter<byte> _buffer;
 
-    private readonly Arena<byte> _artifacts;
-    private readonly List<Command> _commands;
-
     public Property<Int2> Size { get; }
     public Anchors Anchors { get; }
 
     public Canvas(Stream output, Int2 size)
     {
-        _artifacts = new Arena<byte>();
-        _commands = new List<Command>();
         _buffer = new ArrayBufferWriter<byte>();
 
         _output = output;
@@ -26,21 +21,16 @@ public sealed class Canvas
     }
 
     private void EnqueueForDraw(IDrawable drawable) =>
-        drawable.Draw(new Context(_artifacts, _commands));
+        drawable.Draw(new Context(_buffer));
 
     private void EnqueueForClear(IDrawable drawable)
     {
+        var context = new Context(_buffer);
         int blankCount = drawable.Size.Value.X;
         for (int y = 0; y < drawable.Size.Value.Y; y++)
         {
-            Int2 movePos = (drawable.Position.Value.X, drawable.Position.Value.Y + y);
-            var moveHandle = _artifacts.Allocate<Int2>(1);
-            _artifacts.Write(moveHandle, movePos);
-            _commands.Add(new Command(Command.Type.Move, moveHandle));
-
-            var blankHandle = _artifacts.Allocate<int>(1);
-            _artifacts.Write(blankHandle, blankCount);
-            _commands.Add(new Command(Command.Type.Blank, blankHandle));
+            context.Move((drawable.Position.Value.X, drawable.Position.Value.Y + y));
+            context.Blank(blankCount);
         }
     }
 
@@ -66,15 +56,8 @@ public sealed class Canvas
     public Cleanup Watch(params IDrawable[] drawable) =>
         Cleanup.Merge(drawable.Select(Watch).ToArray());
 
-    public void Render()
+    public void Flush()
     {
-        if (_commands.Count == 0) return;
-
-        foreach (var command in _commands)
-            command.Execute(_buffer, _artifacts);
-        _commands.Clear();
-        _artifacts.Reset();
-
         _output.Write(_buffer.WrittenSpan);
         _output.Flush();
 

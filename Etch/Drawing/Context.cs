@@ -1,52 +1,69 @@
 ﻿using Keystone;
-using System.Text;
+using System.Buffers;
 
 namespace Etch.Drawing;
 
-public readonly ref struct Context(Arena<byte> artifacts, List<Command> commands)
+public readonly ref struct Context(ArrayBufferWriter<byte> buffer)
 {
     public void Move(Int2 position)
     {
-        var handle = artifacts.Allocate<Int2>(1);
-        artifacts.Write(handle, position);
-        commands.Add(new Command(Command.Type.Move, handle));
-    }
-
-    public void Plot(byte glyph)
-    {
-        var handle = artifacts.Allocate(1);
-        artifacts.Write(handle, glyph);
-        commands.Add(new Command(Command.Type.Plot, handle));
-    }
-
-    public void Blit(ReadOnlySpan<char> text)
-    {
-        int maxBytes = Encoding.UTF8.GetMaxByteCount(text.Length);
-        var handle = artifacts.Allocate(maxBytes);
-        var span = artifacts.GetSpan(handle);
-        int written = Encoding.UTF8.GetBytes(text, span);
-        var newHandle = artifacts.Reallocate(handle, written);
-        commands.Add(new Command(Command.Type.Blit, newHandle));
-    }
-
-    public void Blank(int count)
-    {
-        var handle = artifacts.Allocate<int>(1);
-        artifacts.Write(handle, count);
-        commands.Add(new Command(Command.Type.Blank, handle));
+        var span = buffer.GetSpan(14);
+        int written = 0;
+        "\x1b["u8.CopyTo(span[written..]); written += 2;
+        (position.Y + 1).TryFormat(span[written..], out int rw, default); written += rw;
+        span[written++] = (byte)';';
+        (position.X + 1).TryFormat(span[written..], out int cw, default); written += cw;
+        span[written++] = (byte)'H';
+        buffer.Advance(written);
     }
 
     public void Foreground(Color color)
     {
-        var handle = artifacts.Allocate<Color>(1);
-        artifacts.Write(handle, color);
-        commands.Add(new Command(Command.Type.Foreground, handle));
+        byte bColor = (byte)color;
+        var span = buffer.GetSpan(11);
+        int written = 0;
+        "\x1b[38;5;"u8.CopyTo(span[written..]); written += 7;
+        bColor.TryFormat(span[written..], out int fw, default); written += fw;
+        span[written++] = (byte)'m';
+        buffer.Advance(written);
     }
 
     public void Background(Color color)
     {
-        var handle = artifacts.Allocate<Color>(1);
-        artifacts.Write(handle, color);
-        commands.Add(new Command(Command.Type.Background, handle));
+        byte bColor = (byte)color;
+        var span = buffer.GetSpan(11);
+        int written = 0;
+        "\x1b[48;5;"u8.CopyTo(span[written..]); written += 7;
+        bColor.TryFormat(span[written..], out int fw, default); written += fw;
+        span[written++] = (byte)'m';
+        buffer.Advance(written);
+    }
+
+    public void Plot(byte glyph)
+    {
+        buffer.GetSpan(1)[0] = glyph;
+        buffer.Advance(1);
+    }
+
+    public void Blit(ReadOnlySpan<byte> text)
+    {
+        var span = buffer.GetSpan(text.Length);
+        text.CopyTo(span);
+        buffer.Advance(text.Length);
+    }
+
+    public void Blit(ReadOnlySpan<char> text)
+    {
+        var span = buffer.GetSpan(text.Length);
+        for (int i = 0; i < text.Length; i++)
+            span[i] = (byte)text[i];
+        buffer.Advance(text.Length);
+    }
+
+    public void Blank(int count)
+    {
+        var span = buffer.GetSpan(count);
+        span[..count].Fill((byte)' ');
+        buffer.Advance(count);
     }
 }
