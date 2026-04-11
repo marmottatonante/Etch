@@ -17,33 +17,47 @@ public static class Examples
 
     public static void Benchmark()
     {
-        Canvas terminal = new(Console.OpenStandardOutput(), (Console.WindowWidth, Console.WindowHeight));
+        int width = Console.WindowWidth;
+        int height = Console.WindowHeight;
 
-        int iterations = 0;
+        Canvas terminal = new(Console.OpenStandardOutput(), (width, height));
+
+        var rng = new Random(42);
         var stopwatch = new Stopwatch();
+        var iterations = 0;
 
-        var logo = new Image(Figlet.Split('\n')).Anchor(terminal.Anchors.Center, Alignment.Center, (0, -2));
-        var title = new Label("Benchmarking").Anchor(terminal.Anchors.Center, Alignment.Center, (0, 2));
-        var progress = new Progress(0, 10).Anchor(terminal.Anchors.Center, Alignment.Center, (0, 3));
-        var counter = new Label("").Anchor(terminal.Anchors.Center, Alignment.Center, (0, 3));
-
-        using (terminal.Watch(logo, title, progress, counter))
+        // 200 labels at random positions updating every frame
+        var labels = Enumerable.Range(0, 200).Select(i =>
         {
-            terminal.Render();
+            var label = new Label(i.ToString());
+            label.Position.Value = (rng.Next(0, width - 10), rng.Next(0, height));
+            return label;
+        }).ToArray();
 
+        using (terminal.Watch(labels))
+        {
+            terminal.Flush();
             stopwatch.Start();
+
             while (stopwatch.Elapsed.TotalSeconds < 10)
             {
-                progress.Current.Value = stopwatch.Elapsed.TotalSeconds;
-                counter.Text.Value = iterations.ToString();
-                terminal.Render();
+                // update all labels
+                foreach (var (label, i) in labels.Select((l, i) => (l, i)))
+                    label.Text.Value = $"{i}:{iterations}";
+
+                // move labels around
+                foreach (var label in labels)
+                    label.Position.Value = (rng.Next(0, width - 10), rng.Next(0, height));
+
+                terminal.Flush();
                 iterations++;
             }
+
             stopwatch.Stop();
         }
 
-        var score = new Label($"Rendered {iterations} times in {stopwatch.Elapsed.TotalSeconds} sec.");
+        var score = new Label($"Stress test: {iterations} frames in {stopwatch.Elapsed.TotalSeconds:F2}s ({iterations / stopwatch.Elapsed.TotalSeconds:F0} fps)");
         using (terminal.Watch(score))
-            terminal.Render();
+            terminal.Flush();
     }
 }
