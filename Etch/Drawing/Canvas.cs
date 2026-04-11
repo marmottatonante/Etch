@@ -43,6 +43,7 @@ public sealed class Canvas
         drawable.Position.Changing += onChanging;
         drawable.Position.Changed += onChanged;
         drawable.Size.Changing += onChanging;
+        drawable.Size.Changed += onChanged;
         drawable.Content.Changed += onChanged;
 
         return new(() => {
@@ -50,6 +51,7 @@ public sealed class Canvas
             drawable.Position.Changing -= onChanging;
             drawable.Position.Changed -= onChanged;
             drawable.Size.Changing -= onChanging;
+            drawable.Size.Changed -= onChanged;
             drawable.Content.Changed -= onChanged;
         });
     }
