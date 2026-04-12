@@ -67,4 +67,13 @@ public readonly ref struct Context(ArrayBufferWriter<byte> buffer)
         span[..count].Fill((byte)' ');
         buffer.Advance(count);
     }
+
+    public void Blank(Rect rect)
+    {
+        for (int y = 0; y < rect.Size.Y; y++)
+        {
+            Move(rect.Position + (0, y));
+            Blank(rect.Size.X);
+        }
+    }
 }

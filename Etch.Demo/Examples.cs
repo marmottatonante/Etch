@@ -36,7 +36,7 @@ public static class Examples
 
         using (terminal.Watch(labels))
         {
-            terminal.Flush();
+            terminal.Render();
             stopwatch.Start();
 
             while (stopwatch.Elapsed.TotalSeconds < 10)
@@ -49,7 +49,7 @@ public static class Examples
                 foreach (var label in labels)
                     label.Position.Value = (rng.Next(0, width - 10), rng.Next(0, height));
 
-                terminal.Flush();
+                terminal.Render();
                 iterations++;
             }
 
@@ -58,6 +58,6 @@ public static class Examples
 
         var score = new Label($"Stress test: {iterations} frames in {stopwatch.Elapsed.TotalSeconds:F2}s ({iterations / stopwatch.Elapsed.TotalSeconds:F0} fps)");
         using (terminal.Watch(score))
-            terminal.Flush();
+            terminal.Render();
     }
 }

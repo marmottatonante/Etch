@@ -8,11 +8,16 @@ public sealed class Canvas
     private readonly Stream _output;
     private readonly ArrayBufferWriter<byte> _buffer;
 
+    private readonly HashSet<Rect> _clearQueue;
+    private readonly HashSet<IDrawable> _renderQueue;
+
+    public Context Context => new(_buffer);
     public Property<Int2> Size { get; }
     public Anchors Anchors { get; }
 
     public Canvas(Stream output, Int2 size)
     {
+        _clearQueue = []; _renderQueue = [];
         _buffer = new ArrayBufferWriter<byte>();
 
         _output = output;
@@ -20,26 +25,18 @@ public sealed class Canvas
         Anchors = new Anchors(Size);
     }
 
-    private void EnqueueForDraw(IDrawable drawable) =>
-        drawable.Draw(new Context(_buffer));
+    private void EnqueueDraw(IDrawable drawable) =>
+        _renderQueue.Add(drawable);
 
-    private void EnqueueForClear(IDrawable drawable)
-    {
-        var context = new Context(_buffer);
-        int blankCount = drawable.Size.Value.X;
-        for (int y = 0; y < drawable.Size.Value.Y; y++)
-        {
-            context.Move((drawable.Position.Value.X, drawable.Position.Value.Y + y));
-            context.Blank(blankCount);
-        }
-    }
+    private void EnqueueClear(IDrawable drawable) =>
+        _clearQueue.Add(new Rect(drawable.Position.Value, drawable.Size.Value));
 
     public Cleanup Watch(IDrawable drawable)
     {
-        void onChanging() => EnqueueForClear(drawable);
-        void onChanged() => EnqueueForDraw(drawable);
+        void onChanging() => EnqueueClear(drawable);
+        void onChanged() => EnqueueDraw(drawable);
 
-        EnqueueForDraw(drawable);
+        EnqueueDraw(drawable);
         drawable.Position.Changing += onChanging;
         drawable.Position.Changed += onChanged;
         drawable.Size.Changing += onChanging;
@@ -47,7 +44,7 @@ public sealed class Canvas
         drawable.Content.Changed += onChanged;
 
         return new(() => {
-            EnqueueForClear(drawable);
+            EnqueueClear(drawable);
             drawable.Position.Changing -= onChanging;
             drawable.Position.Changed -= onChanged;
             drawable.Size.Changing -= onChanging;
@@ -58,8 +55,17 @@ public sealed class Canvas
     public Cleanup Watch(params IDrawable[] drawable) =>
         Cleanup.Merge(drawable.Select(Watch).ToArray());
 
-    public void Flush()
+    public void Render()
     {
+        if(_clearQueue.Count == 0 && _renderQueue.Count == 0) return;
+
+        foreach(var rect in _clearQueue)
+            Context.Blank(rect);
+        _clearQueue.Clear();
+        foreach(var drawable in _renderQueue)
+            drawable.Draw(Context);
+        _renderQueue.Clear();
+
         _output.Write(_buffer.WrittenSpan);
         _output.Flush();
 
