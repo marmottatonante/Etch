@@ -14,7 +14,6 @@ public sealed class Canvas
     private readonly List<Rect> _clearList;
     private readonly List<IDrawable> _renderList;
 
-    public Context Context => new(_buffer);
     public Property<Int2> Size { get; }
     public Anchors Anchors { get; }
 
@@ -71,11 +70,11 @@ public sealed class Canvas
         if(_clearList.Count == 0 && _renderList.Count == 0) return;
 
         foreach(var rect in _clearList)
-            Context.Blank(rect);
+            new Context(_buffer).Blank(rect);
         _clearSet.Clear();
         _clearList.Clear();
         foreach(var drawable in _renderList)
-            drawable.Draw(Context);
+            drawable.Draw(new Context(_buffer));
         _renderSet.Clear();
         _renderList.Clear();
 
