@@ -26,7 +26,6 @@ public static class Examples
         var stopwatch = new Stopwatch();
         var iterations = 0;
 
-        // 200 labels at random positions updating every frame
         var labels = Enumerable.Range(0, 200).Select(i =>
         {
             var label = new Label(i.ToString());
@@ -41,11 +40,9 @@ public static class Examples
 
             while (stopwatch.Elapsed.TotalSeconds < 10)
             {
-                // update all labels
                 foreach (var (label, i) in labels.Select((l, i) => (l, i)))
                     label.Text.Value = $"{i}:{iterations}";
 
-                // move labels around
                 foreach (var label in labels)
                     label.Position.Value = (rng.Next(0, width - 10), rng.Next(0, height));
 
@@ -56,8 +53,11 @@ public static class Examples
             stopwatch.Stop();
         }
 
-        var score = new Label($"Stress test: {iterations} frames in {stopwatch.Elapsed.TotalSeconds:F2}s ({iterations / stopwatch.Elapsed.TotalSeconds:F0} fps)");
-        using (terminal.Watch(score))
+        var logo = new Image(Figlet.Split('\n')).Anchor(terminal.Anchors.Center, Alignment.Center, (0, -2));
+        var score = new Label($"{iterations} in {stopwatch.Elapsed.TotalSeconds:F2}s")
+            .Anchor(terminal.Anchors.Center, Alignment.Center, (0, 2));
+        using (terminal.Watch(logo, score))
             terminal.Render();
+        Console.ReadKey();
     }
 }
