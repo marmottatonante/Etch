@@ -8,8 +8,11 @@ public sealed class Canvas
     private readonly Stream _output;
     private readonly ArrayBufferWriter<byte> _buffer;
 
-    private readonly HashSet<Rect> _clearQueue;
-    private readonly HashSet<IDrawable> _renderQueue;
+    private readonly HashSet<Rect> _clearSet;
+    private readonly HashSet<IDrawable> _renderSet;
+
+    private readonly List<Rect> _clearList;
+    private readonly List<IDrawable> _renderList;
 
     public Context Context => new(_buffer);
     public Property<Int2> Size { get; }
@@ -17,7 +20,8 @@ public sealed class Canvas
 
     public Canvas(Stream output, Int2 size)
     {
-        _clearQueue = []; _renderQueue = [];
+        _clearSet = []; _renderSet = [];
+        _clearList = []; _renderList = [];
         _buffer = new ArrayBufferWriter<byte>();
 
         _output = output;
@@ -25,11 +29,18 @@ public sealed class Canvas
         Anchors = new Anchors(Size);
     }
 
-    private void EnqueueDraw(IDrawable drawable) =>
-        _renderQueue.Add(drawable);
+    private void EnqueueDraw(IDrawable drawable)
+    {
+        if(_renderSet.Add(drawable))
+            _renderList.Add(drawable);
+    }
 
-    private void EnqueueClear(IDrawable drawable) =>
-        _clearQueue.Add(new Rect(drawable.Position.Value, drawable.Size.Value));
+    private void EnqueueClear(IDrawable drawable)
+    {
+        Rect rectToClear = new(drawable.Position.Value, drawable.Size.Value);
+        if(_clearSet.Add(rectToClear))
+            _clearList.Add(rectToClear);
+    }
 
     public Cleanup Watch(IDrawable drawable)
     {
@@ -57,14 +68,16 @@ public sealed class Canvas
 
     public void Render()
     {
-        if(_clearQueue.Count == 0 && _renderQueue.Count == 0) return;
+        if(_clearList.Count == 0 && _renderList.Count == 0) return;
 
-        foreach(var rect in _clearQueue)
+        foreach(var rect in _clearList)
             Context.Blank(rect);
-        _clearQueue.Clear();
-        foreach(var drawable in _renderQueue)
+        _clearSet.Clear();
+        _clearList.Clear();
+        foreach(var drawable in _renderList)
             drawable.Draw(Context);
-        _renderQueue.Clear();
+        _renderSet.Clear();
+        _renderList.Clear();
 
         _output.Write(_buffer.WrittenSpan);
         _output.Flush();
